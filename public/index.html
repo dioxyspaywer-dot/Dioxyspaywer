@@ -1,0 +1,117 @@
+const API_URL = 'https://votre-url-render.onrender.com/api'; // Remplacez par votre vraie URL Render
+let token = localStorage.getItem('token');
+let userData = JSON.parse(localStorage.getItem('userData'));
+
+function showRegister() { 
+    document.getElementById('login-form').classList.add('hidden'); 
+    document.getElementById('register-form').classList.remove('hidden'); 
+}
+
+function showLogin() { 
+    document.getElementById('register-form').classList.add('hidden'); 
+    document.getElementById('login-form').classList.remove('hidden'); 
+}
+
+async function register() {
+    const fullName = document.getElementById('reg-name').value;
+    const phone = document.getElementById('reg-phone').value;
+    const country = document.getElementById('reg-country').value;
+    const password = document.getElementById('reg-pass').value;
+    const referralCode = document.getElementById('reg-referral').value;
+    
+    if (!fullName || !phone || !password) {
+        alert("Veuillez remplir tous les champs obligatoires");
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_URL}/register`, { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ 
+                fullName, 
+                phone, 
+                country, 
+                password, 
+                referralCode 
+            }) 
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+            alert("Inscription réussie ! Veuillez vous connecter.");
+            showLogin();
+        } else {
+            alert(data.error || "Erreur lors de l'inscription");
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert("Erreur de connexion au serveur");
+    }
+}
+
+async function login() {
+    const phone = document.getElementById('login-phone').value;
+    const password = document.getElementById('login-pass').value;
+    
+    if (!phone || !password) {
+        alert("Veuillez entrer votre téléphone et mot de passe");
+        return;
+    }
+    
+    try {
+        const res = await fetch(`${API_URL}/login`, { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ phone, password }) 
+        });
+        
+        const data = await res.json();
+        
+        if (data.token) {
+            token = data.token;
+            userData = data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('userData', JSON.stringify(userData));
+            loadDashboard();
+        } else {
+            alert(data.error || "Identifiants incorrects");
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert("Erreur de connexion au serveur");
+    }
+}
+
+function loadDashboard() {
+    document.getElementById('auth-container').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
+    document.getElementById('wallet-balance').innerText = userData.balance || 0;
+    
+    if (userData.referralCode) {
+        document.getElementById('my-referral-code').innerText = userData.referralCode;
+        document.getElementById('ref-count').innerText = userData.referralCount || 0;
+        document.getElementById('ref-earnings').innerText = userData.referralEarnings || 0;
+    }
+    
+    if (userData.hasLongTerm) { 
+        document.getElementById('btn-buy-lt').style.display = 'none'; 
+        document.getElementById('lt-status').style.display = 'block'; 
+    }
+    
+    if (userData.role === 'admin') { 
+        document.getElementById('admin-section').style.display = 'block'; 
+    }
+}
+
+function logout() { 
+    localStorage.clear(); 
+    location.reload(); 
+}
+
+// Vérification au chargement
+if (token && userData) {
+    loadDashboard();
+}
