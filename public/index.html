@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dioxyspaywer</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f2027; color: white; margin: 0; padding: 0; text-align: center; overflow-x: hidden; }
+        .container { max-width: 600px; margin: 20px auto; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px; }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box;}
+        button { background: #ffd700; color: #0f2027; font-weight: bold; cursor: pointer; }
+        button.secondary { background: #2c5364; color: white; }
+        button.danger { background: #ff4b4b; color: white; }
+        .hidden { display: none !important; }
+        .card { background: rgba(0,0,0,0.2); padding: 15px; margin-bottom: 15px; border-radius: 10px; border-left: 4px solid #ffd700; }
+        h1, h2, h3 { text-align: center; color: #ffd700; }
+        .balance { font-size: 2rem; color: #00e676; text-align: center; font-weight: bold; }
+        #closed-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .cross-icon { width: 200px; height: 200px; fill: #ff0000; }
+        #admin-section { border: 2px solid red; padding: 20px; margin-top: 30px; display: none; }
+        select option { background: #0f2027; color: white; }
+        select optgroup { font-weight: bold; color: #ffd700; }
+    </style>
+</head>
+<body>
+
+    <!-- ÉCRAN CROIX -->
+    <div id="closed-screen" class="hidden">
+        <svg class="cross-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </div>
+
+    <!-- AUTHENTIFICATION -->
+    <div class="container" id="auth-container">
+        <h1>Dioxyspaywer</h1>
+        <div id="login-form">
+            <h3>Connexion</h3>
+            <input type="tel" id="login-phone" placeholder="Téléphone">
+            <input type="password" id="login-pass" placeholder="Mot de passe">
+            <button onclick="login()">Se connecter</button>
+            <p style="text-align:center"><small>Pas de compte ? <a href="#" onclick="showRegister()" style="color:#ffd700">S'inscrire</a></small></p>
+        </div>
+        <div id="register-form" class="hidden">
+            <h3>Inscription</h3>
+            <input type="text" id="reg-name" placeholder="Nom complet">
+            <input type="tel" id="reg-phone" placeholder="Téléphone">
+            <select id="reg-country">
+                <option value="Togo">Togo</option>
+                <option value="Côte d'Ivoire">Côte d'Ivoire</option>
+                <option value="Bénin">Bénin</option>
+            </select>
+            <input type="text" id="reg-referral" placeholder="Code Parrain (Optionnel)">
+            <input type="password" id="reg-pass" placeholder="Mot de passe">
+            <button onclick="register()">S'inscrire (+350F pour parrain)</button>
+            <p style="text-align:center"><small>Déjà membre ? <a href="#" onclick="showLogin()" style="color:#ffd700">Se connecter</a></small></p>
+        </div>
+    </div>
+
+    <!-- TABLEAU DE BORD -->
+    <div class="container hidden" id="dashboard">
+        <div style="display:flex; justify-content:space-between;">
+            <h3 id="user-welcome">Bonjour</h3>
+            <button onclick="logout()" style="width:auto; padding:5px; background:red; color:white;">Déconnexion</button>
+        </div>
+        
+        <div class="card">
+            <p>Solde Disponible</p>
+            <div class="balance"><span id="wallet-balance">0</span> FCFA</div>
+        </div>
+
+        <!-- SECTION PARRAINAGE -->
+        <div class="card" style="border-left-color: #00bcd4;">
+            <h4> Mon Parrainage</h4>
+            <p>Votre code unique :</p>
+            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 10px;" id="my-referral-code">...</div>
+            <button class="secondary" onclick="copyReferralCode()">Copier le code</button>
+            <hr style="border-color:rgba(255,255,255,0.1); margin: 15px 0;">
+            <p>Personnes parrainées : <strong id="ref-count" style="color:#00bcd4">0</strong></p>
+            <p>Gains via parrainage : <strong id="ref-earnings" style="color:#00e676">0</strong> FCFA</p>
+            <small style="color:#aaa;">Bonus : 350 FCFA par inscription.</small>
+        </div>
+
+        <div class="card" id="lt-card">
+            <h4> Produit Long Terme (Obligatoire)</h4>
+            <p>2000 FCFA → 700 FCFA/jour (55 jours)</p>
+            <button id="btn-buy-lt" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
+            <p id="lt-status" style="color:#00e676; display:none;">Actif</p>
+        </div>
+
+        <h3> Produits Courts Termes (2 fois/mois - 5 jours)</h3>
+        <div class="card"><p>Produit 1: 2000 → 1000 FCFA/j</p><button onclick="invest('prod1', 2000)">Investir</button></div>
+        <div class="card"><p>Produit 2: 3000 → 1500 FCFA/j</p><button onclick="invest('prod2', 3000)">Investir</button></div>
+        <div class="card"><p>Produit 3: 10000 → 5000 FCFA/j</p><button onclick="invest('prod3', 10000)">Investir</button></div>
+
+        <h3>💳 Caisse (Lun-Ven, 08h-21h)</h3>
+        <div class="card">
+            <input type="number" id="dep-amount" placeholder="Montant dépôt (Min 2000)">
+            
+            <!-- MENU DÉPÔT (7 MODES) -->
+            <select id="dep-network">
+                <option value="" disabled selected>Choisir l'opérateur</option>
+                <optgroup label="🇹🇬 Togo">
+                    <option value="TMONEY">Tmoney (Mixx by Yas)</option>
+                    <option value="MOOV_TO">Moov Money Togo</option>
+                </optgroup>
+                <optgroup label="🇨🇮 Côte d'Ivoire">
+                    <option value="MTN_CI">MTN Mobile Money CI</option>
+                    <option value="MOOV_CI">Moov Money CI</option>
+                    <option value="ORANGE_CI">Orange Money CI</option>
+                </optgroup>
+                <optgroup label="🇧 Bénin">
+                    <option value="MTN_BJ">MTN Mobile Money Bénin</option>
+                    <option value="MOOV_BJ">Moov Money Bénin</option>
+                </optgroup>
+            </select>
+
+            <button class="secondary" onclick="deposit()">Déposer via PayDunya</button>
+            
+            <hr style="border-color:rgba(255,255,255,0.1)">
+            
+            <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
+            
+            <!-- MENU RETRAIT (7 MODES) -->
+            <select id="wit-network">
+                <option value="" disabled selected>Choisir l'opérateur</option>
+                <optgroup label="🇹🇬 Togo">
+                    <option value="TMONEY">Tmoney (Mixx by Yas)</option>
+                    <option value="MOOV_TO">Moov Money Togo</option>
+                </optgroup>
+                <optgroup label="🇨🇮 Côte d'Ivoire">
+                    <option value="MTN_CI">MTN Mobile Money CI</option>
+                    <option value="MOOV_CI">Moov Money CI</option>
+                    <option value="ORANGE_CI">Orange Money CI</option>
+                </optgroup>
+                <optgroup label="🇯 Bénin">
+                    <option value="MTN_BJ">MTN Mobile Money Bénin</option>
+                    <option value="MOOV_BJ">Moov Money Bénin</option>
+                </optgroup>
+            </select>
+
+            <button onclick="withdraw()">Retirer</button>
+        </div>
+
+        <!-- SECTION CRÉATEUR -->
+        <div id="admin-section">
+            <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
+            <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
+            <button class="danger" onclick="emergencyStop()">⚠️ DÉSACTIVER LE SITE (CROIX ROUGE)</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api'; // Changez par l'URL Render après déploiement
+        let token = localStorage.getItem('token');
+        let userData = JSON.parse(localStorage.getItem('userData'));
+
+        function showClosedScreen() {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('closed-screen').classList.remove('hidden');
+            document.body.style.backgroundColor = '#000000';
+        }
+
+        async function checkSiteStatus() {
+            try { const res = await fetch(`${API_URL}/status`); const data = await res.json(); if (!data.active) showClosedScreen(); } catch (e) {}
+        }
+
+        function showRegister() { document.getElementById('login-form').classList.add('hidden'); document.getElementById('register-form').classList.remove('hidden'); }
+        function showLogin() { document.getElementById('register-form').classList.add('hidden'); document.getElementById('login-form').classList.remove('hidden'); }
+
+        async function register() {
+            const res = await fetch(`${API_URL}/register`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ fullName: document.getElementById('reg-name').value, phone: document.getElementById('reg-phone').value, country: document.getElementById('reg-country').value, password: document.getElementById('reg-pass').value, referralCode: document.getElementById('reg-referral').value }) });
+            const data = await res.json();
+            if(data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
+            alert(data.message || data.error);
+            if(data.success) showLogin();
+        }
+
+        async function login() {
+            const res = await fetch(`${API_URL}/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: document.getElementById('login-phone').value, password: document.getElementById('login-pass').value }) });
+            const data = await res.json();
+            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
+            if (data.token) { token = data.token; userData = data; localStorage.setItem('token', token); localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); } else { alert(data.error); }
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        function copyReferralCode() {
+            const code = document.getElementById('my-referral-code').innerText;
+            navigator.clipboard.writeText(code).then(() => alert('Code copié !')).catch(() => alert('Erreur copie'));
+        }
+
+        function loadDashboard() {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
+            document.getElementById('wallet-balance').innerText = userData.balance;
+            
+            if (userData.referralCode) {
+                document.getElementById('my-referral-code').innerText = userData.referralCode;
+                document.getElementById('ref-count').innerText = userData.referralCount || 0;
+                document.getElementById('ref-earnings').innerText = userData.referralEarnings || 0;
+            }
+
+            if (userData.hasLongTerm) { document.getElementById('btn-buy-lt').style.display = 'none'; document.getElementById('lt-status').style.display = 'block'; }
+            updateProductVisibility();
+
+            if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
+        }
+
+        function updateProductVisibility() {
+            const remaining = userData.remainingPurchases !== undefined ? userData.remainingPurchases : (2 - (userData.monthlyPurchasesCount || 0));
+            const prodButtons = [document.querySelector('button[onclick="invest(\'prod1\', 2000)"]'), document.querySelector('button[onclick="invest(\'prod2\', 3000)"]'), document.querySelector('button[onclick="invest(\'prod3\', 10000)"]')];
+            if (remaining <= 0) {
+                prodButtons.forEach(btn => { if(btn) { btn.style.display = 'none'; btn.parentElement.innerHTML += '<p style="color:red; font-size:0.8rem; margin-top:5px;">Disponible le mois prochain</p>'; } });
+            }
+        }
+
+        async function invest(type, amount) {
+            const res = await fetch(`${API_URL}/invest`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ productType: type, amount }) });
+            const data = await res.json();
+            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
+            if (data.error && data.error.includes('Limite')) { alert(data.error); userData.remainingPurchases = 0; updateProductVisibility(); return; }
+            alert(data.message || data.error);
+            if(data.success) { userData.balance = data.newBalance; if(type === 'longterm') userData.hasLongTerm = true; if (type !== 'longterm') userData.remainingPurchases = data.remainingPurchases; localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); }
+        }
+
+        async function deposit() {
+            const amount = document.getElementById('dep-amount').value;
+            const network = document.getElementById('dep-network').value;
+            if(!amount || amount < 2000) { alert("Minimum 2000 FCFA"); return; }
+            if(network === "") { alert("Veuillez choisir un opérateur"); return; }
+            
+            const res = await fetch(`${API_URL}/deposit`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
+                body: JSON.stringify({ amount, network, phone: userData.phone })
+            });
+            const data = await res.json();
+            
+            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
+            
+            if (data.success && data.paymentUrl) {
+                alert("Vous allez être redirigé vers PayDunya (" + network + ") pour valider le paiement.");
+                window.location.href = data.paymentUrl; 
+            } else {
+                alert(data.message || data.error);
+            }
+        }
+
+        async function withdraw() {
+            const amount = document.getElementById('wit-amount').value;
+            const network = document.getElementById('wit-network').value;
+            if(network === "") { alert("Veuillez choisir un opérateur de retrait"); return; }
+
+            const res = await fetch(`${API_URL}/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone: userData.phone }) });
+            const data = await res.json();
+            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
+            alert(data.message || data.error);
+            if(data.success) { userData.balance -= amount; localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); }
+        }
+
+        async function loadAdminData() {
+            const res = await fetch(`${API_URL}/admin/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
+            const data = await res.json();
+            if(data.users) document.getElementById('vault-total').innerText = data.totalVault;
+        }
+
+        async function emergencyStop() {
+            if(!confirm("ATTENTION : Cela va afficher une CROIX et vider les comptes ! Êtes-vous sûr ?")) return;
+            const res = await fetch(`${API_URL}/admin/emergency-stop`, { method: 'POST', headers: {'Authorization': `Bearer ${token}`} });
+            const data = await res.json();
+            alert(data.message);
+            if(data.success) showClosedScreen();
+        }
+
+        checkSiteStatus();
+        if (token && userData) loadDashboard();
+    </script>
+</body>
+                                   </html>
