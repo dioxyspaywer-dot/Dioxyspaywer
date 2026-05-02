@@ -13,13 +13,44 @@
         button.danger { background: #ff4b4b; color: white; }
         .hidden { display: none !important; }
         .card { background: rgba(0,0,0,0.2); padding: 15px; margin-bottom: 15px; border-radius: 10px; border-left: 4px solid #ffd700; }
-        h1, h2, h3 { text-align: center; color: #ffd700; }
+        h1, h2, h3, h4 { text-align: center; color: #ffd700; margin-top: 0; }
         .balance { font-size: 2rem; color: #00e676; text-align: center; font-weight: bold; }
         #closed-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
         .cross-icon { width: 200px; height: 200px; fill: #ff0000; }
         #admin-section { border: 2px solid red; padding: 20px; margin-top: 30px; display: none; }
         select option { background: #0f2027; color: white; }
         select optgroup { font-weight: bold; color: #ffd700; }
+        
+        /* Styles spécifiques pour les nouvelles cartes compactes */
+        .compact-grid {
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            margin-bottom: 15px;
+        }
+        .compact-card {
+            background: rgba(0,0,0,0.2); 
+            padding: 12px; 
+            border-radius: 10px; 
+            margin-bottom: 0;
+            text-align: center;
+        }
+        .compact-title {
+            color: #ffd700; 
+            margin: 0 0 8px 0; 
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        .compact-sub {
+            font-size: 0.75rem; 
+            color: #ccc; 
+            margin: 0 0 5px 0;
+        }
+        .compact-balance {
+            font-size: 1.3rem; 
+            margin: 5px 0; 
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -57,14 +88,31 @@
 
     <!-- TABLEAU DE BORD -->
     <div class="container hidden" id="dashboard">
-        <div style="display:flex; justify-content:space-between;">
-            <h3 id="user-welcome">Bonjour</h3>
-            <button onclick="logout()" style="width:auto; padding:5px; background:red; color:white;">Déconnexion</button>
+        <div style="display:flex; justify-content:space-between; align-items: center;">
+            <h3 id="user-welcome" style="margin:0; font-size: 1.2rem;">Bonjour</h3>
+            <button onclick="logout()" style="width:auto; padding:5px 10px; background:red; color:white; font-size: 0.8rem; margin:0;">Déconnexion</button>
         </div>
         
-        <div class="card">
-            <p>Solde Disponible</p>
-            <div class="balance"><span id="wallet-balance">0</span> FCFA</div>
+        <!-- NOUVELLE SECTION DES SOLDES SÉPARÉS (COMPACT) -->
+        <div class="compact-grid">
+            
+            <!-- PREMIÈRE CASE : DÉPÔT -->
+            <div class="compact-card" style="border-left: 4px solid #4CAF50;">
+                <h4 class="compact-title">💰 DÉPÔT</h4>
+                <p class="compact-sub">Pour achats & bonus</p>
+                <div class="compact-balance" style="color: #4CAF50;">
+                    <span id="deposit-balance">0</span> FCFA
+                </div>
+            </div>
+
+            <!-- DEUXIÈME CASE : RETRAIT -->
+            <div class="compact-card" style="border-left: 4px solid #FF9800;">
+                <h4 class="compact-title">💸 RETRAIT</h4>
+                <p class="compact-sub">Gains disponibles</p>
+                <div class="compact-balance" style="color: #FF9800;">
+                    <span id="withdraw-balance">0</span> FCFA
+                </div>
+            </div>
         </div>
 
         <!-- SECTION PARRAINAGE -->
@@ -107,7 +155,7 @@
                     <option value="MOOV_CI">Moov Money CI</option>
                     <option value="ORANGE_CI">Orange Money CI</option>
                 </optgroup>
-                <optgroup label="🇧 Bénin">
+                <optgroup label="🇯 Bénin">
                     <option value="MTN_BJ">MTN Mobile Money Bénin</option>
                     <option value="MOOV_BJ">Moov Money Bénin</option>
                 </optgroup>
@@ -131,7 +179,7 @@
                     <option value="MOOV_CI">Moov Money CI</option>
                     <option value="ORANGE_CI">Orange Money CI</option>
                 </optgroup>
-                <optgroup label="🇯 Bénin">
+                <optgroup label="🇧🇯 Bénin">
                     <option value="MTN_BJ">MTN Mobile Money Bénin</option>
                     <option value="MOOV_BJ">Moov Money Bénin</option>
                 </optgroup>
@@ -149,7 +197,8 @@
     </div>
 
     <script>
-        const API_URL = 'https://dioxyspaywer.onrender.com/api';
+        // URL CORRIGÉE VERS VOTRE SITE RENDER
+        const API_URL = 'https://dioxyspaywer.onrender.com/api'; 
         let token = localStorage.getItem('token');
         let userData = JSON.parse(localStorage.getItem('userData'));
 
@@ -193,7 +242,15 @@
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
             document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
-            document.getElementById('wallet-balance').innerText = userData.balance;
+            
+            // GESTION DES DEUX SOLDES
+            // Si le serveur envoie depositBalance et withdrawBalance, on les utilise.
+            // Sinon, on met tout dans depositBalance par défaut pour ne pas casser l'affichage.
+            const depositBal = userData.depositBalance !== undefined ? userData.depositBalance : (userData.balance || 0);
+            const withdrawBal = userData.withdrawBalance !== undefined ? userData.withdrawBalance : 0;
+            
+            document.getElementById('deposit-balance').innerText = depositBal;
+            document.getElementById('withdraw-balance').innerText = withdrawBal;
             
             if (userData.referralCode) {
                 document.getElementById('my-referral-code').innerText = userData.referralCode;
@@ -221,7 +278,14 @@
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             if (data.error && data.error.includes('Limite')) { alert(data.error); userData.remainingPurchases = 0; updateProductVisibility(); return; }
             alert(data.message || data.error);
-            if(data.success) { userData.balance = data.newBalance; if(type === 'longterm') userData.hasLongTerm = true; if (type !== 'longterm') userData.remainingPurchases = data.remainingPurchases; localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); }
+            if(data.success) { 
+                // Mise à jour locale simple pour l'affichage immédiat
+                userData.balance = data.newBalance; 
+                if(type === 'longterm') userData.hasLongTerm = true; 
+                if (type !== 'longterm') userData.remainingPurchases = data.remainingPurchases; 
+                localStorage.setItem('userData', JSON.stringify(userData)); 
+                loadDashboard(); 
+            }
         }
 
         async function deposit() {
@@ -256,7 +320,12 @@
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
-            if(data.success) { userData.balance -= amount; localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); }
+            if(data.success) { 
+                // Note: Le solde réel sera mis à jour au prochain rechargement ou via WebSocket si implémenté
+                userData.balance -= amount; 
+                localStorage.setItem('userData', JSON.stringify(userData)); 
+                loadDashboard(); 
+            }
         }
 
         async function loadAdminData() {
@@ -277,4 +346,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-  </html>
+                        </html>
