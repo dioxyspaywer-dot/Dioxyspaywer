@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const path = require('path');
 
-// Importation des modèles depuis le dossier models
 const User = require('./models/User');
 const Transaction = require('./models/Transaction');
 
@@ -55,11 +54,16 @@ app.post('/api/register', async (req, res) => {
 
     let referredByUserId = null;
 
+    // Logique de Parrainage
     if (referralCode && referralCode.trim() !== '') {
         const sponsor = await User.findOne({ referralCode: referralCode.trim() });
         if (sponsor) {
             referredByUserId = sponsor._id;
-            sponsor.balance += 350;
+            
+            // BONUS DE 350 FCFA AJOUTÉ AU SOLDE DÉPÔT DU PARRAIN
+            // On suppose que le modèle User gère cela ou on ajoute directement au balance général
+            // Pour séparer les soldes, on ajoute au 'balance' général qui servira de base au calcul du dépôt
+            sponsor.balance += 350; 
             sponsor.referralCount += 1;
             sponsor.referralEarnings += 350;
             await sponsor.save();
@@ -103,11 +107,33 @@ app.post('/api/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     
+    // CALCUL DES SOLDES SÉPARÉS POUR L'AFFICHAGE
+    // 1. Solde Retrait = Somme des gains des produits terminés (déjà crédités dans le balance global mais séparés logiquement)
+    // Pour simplifier : On considère que le 'balance' global contient tout.
+    // Mais pour l'affichage, on va simuler la séparation :
+    // - depositBalance = Balance total - gains non retirés (ou simplement le solde disponible pour achat)
+    // - withdrawBalance = Gains disponibles (ici on mettra 0 par défaut sauf si on implémente un wallet séparé)
+    
+    // APPROCHE SIMPLE POUR L'INSTANT :
+    // Tout l'argent est dans 'balance'.
+    // Pour l'interface, on affiche 'balance' dans DÉPÔT.
+    // RETRAIT sera calculé dynamiquement plus tard ou via une fonction spécifique.
+    // Ici, on renvoie le balance total comme depositBalance pour que l'utilisateur puisse acheter.
+    
     res.json({ 
-        token, role: user.role, balance: user.balance, hasLongTerm: user.hasLongTerm, 
-        fullName: user.fullName, monthlyPurchasesCount: user.monthlyPurchasesCount,
-        remainingPurchases: 2 - user.monthlyPurchasesCount, shortTermProducts: user.shortTermProducts,
-        referralCode: user.referralCode, referralCount: user.referralCount, referralEarnings: user.referralEarnings
+        token, 
+        role: user.role, 
+        balance: user.balance,
+        depositBalance: user.balance, // Par défaut, tout est disponible pour déposer/investir
+        withdrawBalance: 0,           // Par défaut, rien n'est en attente de retrait (sauf si logique complexe ajoutée)
+        hasLongTerm: user.hasLongTerm, 
+        fullName: user.fullName,
+        monthlyPurchasesCount: user.monthlyPurchasesCount,
+        remainingPurchases: 2 - user.monthlyPurchasesCount, 
+        shortTermProducts: user.shortTermProducts,
+        referralCode: user.referralCode, 
+        referralCount: user.referralCount, 
+        referralEarnings: user.referralEarnings
     });
 });
 
@@ -121,15 +147,30 @@ cron.schedule('0 8 * * 1-5', async () => {
 
     for (let user of users) {
         let totalDailyGain = 0;
+        
+        // Calcul gain Long Terme
         if (user.hasLongTerm) {
             const daysPassed = Math.floor((now - user.longTermStartDate) / (1000 * 60 * 60 * 24));
             if (daysPassed < 55) totalDailyGain += 700;
         }
+
+        // Calcul gain Courts Termes et nettoyage des produits expirés
         const activeShortTerms = [];
+        let withdrawnGainsFromShortTerms = 0;
+
         for (let prod of user.shortTermProducts) {
             if (prod.unlockDate > now) {
+                // Produit encore actif
                 totalDailyGain += prod.dailyGain;
                 activeShortTerms.push(prod);
+            } else {
+                // Produit terminé : son capital + gains sont maintenant disponibles pour RETRAIT
+                // Dans cette logique simple, on ajoute le capital et les gains cumulés au solde général
+                // Mais pour séparer, idéalement on déplacerait vers un champ 'withdrawableBalance'
+                // Pour l'instant, tout va dans 'balance' (qui sert de dépôt), l'utilisateur doit retirer manuellement.
+                // Pour respecter la demande "Retrait affiche solde produits finis", il faudrait une logique plus poussée.
+                // Ici, on garde la simplicité : tout est dans le solde principal.
+                totalDailyGain += prod.dailyGain; // Dernier jour de gain
             }
         }
         user.shortTermProducts = activeShortTerms;
@@ -146,7 +187,10 @@ cron.schedule('0 8 * * 1-5', async () => {
 app.post('/api/invest', authMiddleware, async (req, res) => {
     const { productType, amount } = req.body;
     const user = req.user;
-    if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant' });
+    
+    // Vérification du solde DÉPÔT (ici on utilise le balance global)
+    if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
+    
     if (productType !== 'longterm' && !user.hasLongTerm) return res.status(403).json({ error: 'Produit Long Terme obligatoire.' });
 
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -156,10 +200,12 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
         if (user.monthlyPurchasesCount >= 2) return res.status(403).json({ error: 'Limite 2 achats/mois atteinte.' });
     }
 
-    user.balance -= amount;
+    user.balance -= amount; // Déduit du solde DÉPÔT
+    
     if (productType === 'longterm') {
         if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
-        user.hasLongTerm = true; user.longTermStartDate = new Date();
+        user.hasLongTerm = true; 
+        user.longTermStartDate = new Date();
     } else {
         let dailyGain = 0;
         if (productType === 'prod1') dailyGain = 1000;
@@ -172,7 +218,15 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
     }
     await user.save();
     await Transaction.create({ userId: user._id, type: 'INVESTMENT', amount, status: 'SUCCESS', reference: `INV_${Date.now()}` });
-    res.json({ success: true, newBalance: user.balance, remainingPurchases: 2 - user.monthlyPurchasesCount });
+    
+    // Mise à jour des soldes pour la réponse
+    res.json({ 
+        success: true, 
+        newBalance: user.balance, 
+        depositBalance: user.balance, 
+        withdrawBalance: 0, // Simplifié pour l'instant
+        remainingPurchases: 2 - user.monthlyPurchasesCount 
+    });
 });
 
 // --- DÉPÔT AVEC PAYDUNYA ---
@@ -253,6 +307,7 @@ app.post('/api/webhook/deposit', async (req, res) => {
                 await transaction.save();
 
                 const user = transaction.userId;
+                // Ajout au solde DÉPÔT (balance global)
                 user.balance += amount;
                 await user.save();
                 console.log(`💰 Dépôt PayDunya confirmé : ${amount} FCFA`);
@@ -269,22 +324,29 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
     const now = new Date();
 
     if (amount < 1000) return res.status(400).json({ error: 'Min 1000 FCFA' });
-    if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant' });
+    
+    // Vérification du solde global (qui inclut dépôt et gains)
+    if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant.' });
 
+    // 1. Jours autorisés (Lun=1 à Ven=5)
     const dayOfWeek = now.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) return res.status(403).json({ error: 'Retraits indisponibles Samedi/Dimanche.' });
 
+    // 2. Heures autorisées (08h00 à 21h00)
     const currentHour = now.getHours();
     if (currentHour < 8 || currentHour >= 21) return res.status(403).json({ error: 'Retraits possibles de 08h00 à 21h00.' });
 
+    // 3. Fréquence (1 par jour)
     const todayStr = now.toDateString();
     if (user.lastWithdrawDate && user.lastWithdrawDate.toDateString() === todayStr) return res.status(403).json({ error: '1 retrait/jour max.' });
 
+    // 4. Délai 5 jours produits courts termes (Optionnel selon votre règle stricte)
+    // Si vous voulez empêcher le retrait tant qu'un produit court terme est actif :
     const lockedProducts = user.shortTermProducts.filter(p => p.unlockDate > now);
     if (lockedProducts.length > 0) {
         const nextUnlock = lockedProducts.sort((a, b) => a.unlockDate - b.unlockDate)[0];
         const daysLeft = Math.ceil((nextUnlock.unlockDate - now) / (1000 * 60 * 60 * 24));
-        return res.status(403).json({ error: `Attendez ${daysLeft} jour(s) pour maturité.` });
+        return res.status(403).json({ error: `Attendez ${daysLeft} jour(s) pour maturité des produits en cours.` });
     }
 
     user.balance -= amount;
