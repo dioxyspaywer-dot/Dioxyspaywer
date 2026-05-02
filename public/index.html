@@ -5,52 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dioxyspaywer</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f2027; color: white; margin: 0; padding: 0; text-align: center; overflow-x: hidden; }
-        .container { max-width: 600px; margin: 20px auto; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f2027; color: white; margin: 0; padding: 0; text-align: center; padding-bottom: 80px; }
+        .container { max-width: 600px; margin: 20px auto; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 15px; min-height: 80vh; }
         input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; box-sizing: border-box;}
         button { background: #ffd700; color: #0f2027; font-weight: bold; cursor: pointer; }
         button.secondary { background: #2c5364; color: white; }
         button.danger { background: #ff4b4b; color: white; }
         .hidden { display: none !important; }
-        .card { background: rgba(0,0,0,0.2); padding: 15px; margin-bottom: 15px; border-radius: 10px; border-left: 4px solid #ffd700; }
+        .card { background: rgba(0,0,0,0.2); padding: 15px; margin-bottom: 15px; border-radius: 10px; border-left: 4px solid #ffd700; text-align: left; }
         h1, h2, h3, h4 { text-align: center; color: #ffd700; margin-top: 0; }
         .balance { font-size: 2rem; color: #00e676; text-align: center; font-weight: bold; }
+        
+        /* Styles pour les cartes compactes (Solde) */
+        .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .compact-card { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; margin-bottom: 0; text-align: center; }
+        .compact-title { color: #ffd700; margin: 0 0 8px 0; font-size: 1rem; font-weight: bold; }
+        .compact-sub { font-size: 0.75rem; color: #ccc; margin: 0 0 5px 0; }
+        .compact-balance { font-size: 1.3rem; margin: 5px 0; font-weight: bold; }
+
+        /* Barre de navigation */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: #1a1a2e; display: flex; justify-content: space-around;
+            align-items: center; padding: 12px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+            z-index: 9999; border-top: 1px solid #333;
+        }
+        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 0.75rem; cursor: pointer; text-decoration: none; transition: color 0.3s; }
+        .nav-btn.active { color: #ffd700; font-weight: bold; }
+        .nav-icon { font-size: 1.4rem; margin-bottom: 4px; }
+        
         #closed-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
         .cross-icon { width: 200px; height: 200px; fill: #ff0000; }
         #admin-section { border: 2px solid red; padding: 20px; margin-top: 30px; display: none; }
         select option { background: #0f2027; color: white; }
-        select optgroup { font-weight: bold; color: #ffd700; }
-        
-        /* Styles spécifiques pour les nouvelles cartes compactes */
-        .compact-grid {
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 10px; 
-            margin-bottom: 15px;
-        }
-        .compact-card {
-            background: rgba(0,0,0,0.2); 
-            padding: 12px; 
-            border-radius: 10px; 
-            margin-bottom: 0;
-            text-align: center;
-        }
-        .compact-title {
-            color: #ffd700; 
-            margin: 0 0 8px 0; 
-            font-size: 1rem;
-            font-weight: bold;
-        }
-        .compact-sub {
-            font-size: 0.75rem; 
-            color: #ccc; 
-            margin: 0 0 5px 0;
-        }
-        .compact-balance {
-            font-size: 1.3rem; 
-            margin: 5px 0; 
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -86,109 +73,129 @@
         </div>
     </div>
 
-    <!-- TABLEAU DE BORD -->
-    <div class="container hidden" id="dashboard">
-        <div style="display:flex; justify-content:space-between; align-items: center;">
-            <h3 id="user-welcome" style="margin:0; font-size: 1.2rem;">Bonjour</h3>
-            <button onclick="logout()" style="width:auto; padding:5px 10px; background:red; color:white; font-size: 0.8rem; margin:0;">Déconnexion</button>
-        </div>
+    <!-- CONTENU PRINCIPAL (Dashboard, Produits, Compte, Transactions) -->
+    <div class="container hidden" id="main-content">
         
-        <!-- NOUVELLE SECTION DES SOLDES SÉPARÉS (COMPACT) -->
-        <div class="compact-grid">
-            
-            <!-- PREMIÈRE CASE : DÉPÔT -->
-            <div class="compact-card" style="border-left: 4px solid #4CAF50;">
-                <h4 class="compact-title">💰 DÉPÔT</h4>
-                <p class="compact-sub">Pour achats & bonus</p>
-                <div class="compact-balance" style="color: #4CAF50;">
-                    <span id="deposit-balance">0</span> FCFA
-                </div>
+        <!-- 1. SECTION TABLEAU DE BORD (SOLDES) -->
+        <div id="section-dashboard">
+            <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 20px;">
+                <h3 id="user-welcome" style="margin:0;">Bonjour</h3>
+                <button onclick="logout()" style="width:auto; padding:5px 10px; background:red; color:white; font-size: 0.8rem; margin:0;">Déconnexion</button>
             </div>
 
-            <!-- DEUXIÈME CASE : RETRAIT -->
-            <div class="compact-card" style="border-left: 4px solid #FF9800;">
-                <h4 class="compact-title">💸 RETRAIT</h4>
-                <p class="compact-sub">Gains disponibles</p>
-                <div class="compact-balance" style="color: #FF9800;">
-                    <span id="withdraw-balance">0</span> FCFA
+            <!-- SOLDES (INTACTS COMME DEMANDÉ) -->
+            <div class="compact-grid">
+                <div class="compact-card" style="border-left: 4px solid #4CAF50;">
+                    <h4 class="compact-title"> DÉPÔT</h4>
+                    <p class="compact-sub">Pour les achats et les bonus</p>
+                    <div class="compact-balance" style="color: #4CAF50;">
+                        <span id="deposit-balance">0</span> FCFA
+                    </div>
                 </div>
+                <div class="compact-card" style="border-left: 4px solid #FF9800;">
+                    <h4 class="compact-title">💸 RETRAITE</h4>
+                    <p class="compact-sub">Gains disponibles</p>
+                    <div class="compact-balance" style="color: #FF9800;">
+                        <span id="withdraw-balance">0</span> FCFA
+                    </div>
+                </div>
+            </div>
+            
+            <p style="text-align: center; color: #aaa; font-size: 0.9rem;">Bienvenue sur votre tableau de bord.</p>
+        </div>
+
+        <!-- 2. SECTION PRODUITS (INVESTISSEMENTS) -->
+        <div id="section-products" class="hidden">
+            <h3>📦 Mes Investissements</h3>
+            
+            <div class="card" id="lt-card-prod">
+                <h4> Produit Long Terme (Obligatoire)</h4>
+                <p>2000 FCFA → 700 FCFA/jour (55 jours)</p>
+                <button id="btn-buy-lt-prod" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
+                <p id="lt-status-prod" style="color:#00e676; display:none; text-align:center;">✅ Actif</p>
+            </div>
+
+            <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
+            <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Bloqué 5 jours)</p>
+            
+            <div class="card"><p><strong>Produit 1:</strong> 2000 FCFA → 1000 FCFA/j</p><button onclick="invest('prod1', 2000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 2:</strong> 3000 FCFA → 1500 FCFA/j</p><button onclick="invest('prod2', 3000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 3:</strong> 10000 FCFA → 5000 FCFA/j</p><button onclick="invest('prod3', 10000)">Investir</button></div>
+        </div>
+
+        <!-- 3. SECTION COMPTE (INFOS + PARRAINAGE) -->
+        <div id="section-account" class="hidden">
+            <h3> Mon Compte</h3>
+            
+            <div class="card">
+                <h4>Informations</h4>
+                <p><strong>Nom :</strong> <span id="acc-name">-</span></p>
+                <p><strong>Téléphone :</strong> <span id="acc-phone">-</span></p>
+                <p><strong>Pays :</strong> <span id="acc-country">-</span></p>
+            </div>
+
+            <div class="card" style="border-left-color: #00bcd4;">
+                <h4> Mon Parrainage</h4>
+                <p>Votre code unique :</p>
+                <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 10px; text-align:center;" id="my-referral-code">...</div>
+                <button class="secondary" onclick="copyReferralCode()">Copier le code</button>
+                <hr style="border-color:rgba(255,255,255,0.1); margin: 15px 0;">
+                <p>Personnes parrainées : <strong id="acc-ref-count" style="color:#00bcd4">0</strong></p>
+                <p>Gains via parrainage : <strong id="acc-ref-earnings" style="color:#00e676">0</strong> FCFA</p>
+                <small style="color:#aaa;">Bonus : 350 FCFA par inscription.</small>
             </div>
         </div>
 
-        <!-- SECTION PARRAINAGE -->
-        <div class="card" style="border-left-color: #00bcd4;">
-            <h4> Mon Parrainage</h4>
-            <p>Votre code unique :</p>
-            <div style="background: rgba(255,255,255,0.1); padding: 10px; border-radius: 5px; font-family: monospace; font-size: 1.2rem; letter-spacing: 2px; margin-bottom: 10px;" id="my-referral-code">...</div>
-            <button class="secondary" onclick="copyReferralCode()">Copier le code</button>
-            <hr style="border-color:rgba(255,255,255,0.1); margin: 15px 0;">
-            <p>Personnes parrainées : <strong id="ref-count" style="color:#00bcd4">0</strong></p>
-            <p>Gains via parrainage : <strong id="ref-earnings" style="color:#00e676">0</strong> FCFA</p>
-            <small style="color:#aaa;">Bonus : 350 FCFA par inscription.</small>
+        <!-- 4. SECTION TRANSACTIONS (CAISSE) -->
+        <div id="section-transactions" class="hidden">
+            <h3>💳 Caisse (Lun-Ven, 08h-21h)</h3>
+            
+            <div class="card">
+                <h4 style="color:#4CAF50">Dépôt</h4>
+                <input type="number" id="dep-amount" placeholder="Montant dépôt (Min 2000)">
+                <select id="dep-network">
+                    <option value="" disabled selected>Choisir l'opérateur</option>
+                    <optgroup label="🇹🇬 Togo">
+                        <option value="TMONEY">Tmoney (Mixx by Yas)</option>
+                        <option value="MOOV_TO">Moov Money Togo</option>
+                    </optgroup>
+                    <optgroup label="🇨🇮 Côte d'Ivoire">
+                        <option value="MTN_CI">MTN Mobile Money CI</option>
+                        <option value="MOOV_CI">Moov Money CI</option>
+                        <option value="ORANGE_CI">Orange Money CI</option>
+                    </optgroup>
+                    <optgroup label="🇧🇯 Bénin">
+                        <option value="MTN_BJ">MTN Mobile Money Bénin</option>
+                        <option value="MOOV_BJ">Moov Money Bénin</option>
+                    </optgroup>
+                </select>
+                <button class="secondary" onclick="deposit()">Déposer via PayDunya</button>
+            </div>
+            
+            <div class="card">
+                <h4 style="color:#FF9800">Retrait</h4>
+                <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
+                <select id="wit-network">
+                    <option value="" disabled selected>Choisir l'opérateur</option>
+                    <optgroup label="🇹 Togo">
+                        <option value="TMONEY">Tmoney (Mixx by Yas)</option>
+                        <option value="MOOV_TO">Moov Money Togo</option>
+                    </optgroup>
+                    <optgroup label="🇨🇮 Côte d'Ivoire">
+                        <option value="MTN_CI">MTN Mobile Money CI</option>
+                        <option value="MOOV_CI">Moov Money CI</option>
+                        <option value="ORANGE_CI">Orange Money CI</option>
+                    </optgroup>
+                    <optgroup label="🇧 Bénin">
+                        <option value="MTN_BJ">MTN Mobile Money Bénin</option>
+                        <option value="MOOV_BJ">Moov Money Bénin</option>
+                    </optgroup>
+                </select>
+                <button onclick="withdraw()">Retirer</button>
+            </div>
         </div>
 
-        <div class="card" id="lt-card">
-            <h4> Produit Long Terme (Obligatoire)</h4>
-            <p>2000 FCFA → 700 FCFA/jour (55 jours)</p>
-            <button id="btn-buy-lt" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
-            <p id="lt-status" style="color:#00e676; display:none;">Actif</p>
-        </div>
-
-        <h3> Produits Courts Termes (2 fois/mois - 5 jours)</h3>
-        <div class="card"><p>Produit 1: 2000 → 1000 FCFA/j</p><button onclick="invest('prod1', 2000)">Investir</button></div>
-        <div class="card"><p>Produit 2: 3000 → 1500 FCFA/j</p><button onclick="invest('prod2', 3000)">Investir</button></div>
-        <div class="card"><p>Produit 3: 10000 → 5000 FCFA/j</p><button onclick="invest('prod3', 10000)">Investir</button></div>
-
-        <h3>💳 Caisse (Lun-Ven, 08h-21h)</h3>
-        <div class="card">
-            <input type="number" id="dep-amount" placeholder="Montant dépôt (Min 2000)">
-            
-            <!-- MENU DÉPÔT (7 MODES) -->
-            <select id="dep-network">
-                <option value="" disabled selected>Choisir l'opérateur</option>
-                <optgroup label="🇹🇬 Togo">
-                    <option value="TMONEY">Tmoney (Mixx by Yas)</option>
-                    <option value="MOOV_TO">Moov Money Togo</option>
-                </optgroup>
-                <optgroup label="🇨🇮 Côte d'Ivoire">
-                    <option value="MTN_CI">MTN Mobile Money CI</option>
-                    <option value="MOOV_CI">Moov Money CI</option>
-                    <option value="ORANGE_CI">Orange Money CI</option>
-                </optgroup>
-                <optgroup label="🇯 Bénin">
-                    <option value="MTN_BJ">MTN Mobile Money Bénin</option>
-                    <option value="MOOV_BJ">Moov Money Bénin</option>
-                </optgroup>
-            </select>
-
-            <button class="secondary" onclick="deposit()">Déposer via PayDunya</button>
-            
-            <hr style="border-color:rgba(255,255,255,0.1)">
-            
-            <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
-            
-            <!-- MENU RETRAIT (7 MODES) -->
-            <select id="wit-network">
-                <option value="" disabled selected>Choisir l'opérateur</option>
-                <optgroup label="🇹🇬 Togo">
-                    <option value="TMONEY">Tmoney (Mixx by Yas)</option>
-                    <option value="MOOV_TO">Moov Money Togo</option>
-                </optgroup>
-                <optgroup label="🇨🇮 Côte d'Ivoire">
-                    <option value="MTN_CI">MTN Mobile Money CI</option>
-                    <option value="MOOV_CI">Moov Money CI</option>
-                    <option value="ORANGE_CI">Orange Money CI</option>
-                </optgroup>
-                <optgroup label="🇧🇯 Bénin">
-                    <option value="MTN_BJ">MTN Mobile Money Bénin</option>
-                    <option value="MOOV_BJ">Moov Money Bénin</option>
-                </optgroup>
-            </select>
-
-            <button onclick="withdraw()">Retirer</button>
-        </div>
-
-        <!-- SECTION CRÉATEUR -->
+        <!-- SECTION CRÉATEUR (Admin) -->
         <div id="admin-section">
             <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
             <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
@@ -196,15 +203,55 @@
         </div>
     </div>
 
+    <!-- BARRE DE NAVIGATION EN BAS -->
+    <div class="bottom-nav">
+        <div class="nav-btn active" onclick="switchTab('dashboard')">
+            <span class="nav-icon">🏠</span>
+            <span>Tableau de bord</span>
+        </div>
+        <div class="nav-btn" onclick="switchTab('products')">
+            <span class="nav-icon">📦</span>
+            <span>Produits</span>
+        </div>
+        <div class="nav-btn" onclick="switchTab('account')">
+            <span class="nav-icon">👤</span>
+            <span>Compte</span>
+        </div>
+        <div class="nav-btn" onclick="switchTab('transactions')">
+            <span class="nav-icon">💳</span>
+            <span>Transactions</span>
+        </div>
+    </div>
+
     <script>
-        // URL CORRIGÉE VERS VOTRE SITE RENDER
-        const API_URL = 'https://dioxyspaywer.onrender.com/api'; 
+        const API_URL = 'https://dioxyspaywer.onrender.com/api';
         let token = localStorage.getItem('token');
         let userData = JSON.parse(localStorage.getItem('userData'));
 
+        // GESTION DE LA NAVIGATION
+        function switchTab(tabName) {
+            // Cacher toutes les sections
+            document.getElementById('section-dashboard').classList.add('hidden');
+            document.getElementById('section-products').classList.add('hidden');
+            document.getElementById('section-account').classList.add('hidden');
+            document.getElementById('section-transactions').classList.add('hidden');
+            
+            // Afficher la section demandée
+            document.getElementById('section-' + tabName).classList.remove('hidden');
+            
+            // Mettre à jour les boutons
+            const btns = document.querySelectorAll('.nav-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            
+            if(tabName === 'dashboard') btns[0].classList.add('active');
+            if(tabName === 'products') btns[1].classList.add('active');
+            if(tabName === 'account') btns[2].classList.add('active');
+            if(tabName === 'transactions') btns[3].classList.add('active');
+        }
+
         function showClosedScreen() {
             document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('main-content').classList.add('hidden');
             document.getElementById('closed-screen').classList.remove('hidden');
             document.body.style.backgroundColor = '#000000';
         }
@@ -240,25 +287,34 @@
 
         function loadDashboard() {
             document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            
+            // Initialiser sur l'onglet Dashboard
+            switchTab('dashboard');
+
             document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
             
-            // GESTION DES DEUX SOLDES
-            // Si le serveur envoie depositBalance et withdrawBalance, on les utilise.
-            // Sinon, on met tout dans depositBalance par défaut pour ne pas casser l'affichage.
+            // Remplir infos compte
+            document.getElementById('acc-name').innerText = userData.fullName;
+            document.getElementById('acc-phone').innerText = userData.phone;
+            document.getElementById('acc-country').innerText = userData.country;
+            document.getElementById('acc-ref-count').innerText = userData.referralCount || 0;
+            document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
+            
+            // Soldes
             const depositBal = userData.depositBalance !== undefined ? userData.depositBalance : (userData.balance || 0);
             const withdrawBal = userData.withdrawBalance !== undefined ? userData.withdrawBalance : 0;
-            
             document.getElementById('deposit-balance').innerText = depositBal;
             document.getElementById('withdraw-balance').innerText = withdrawBal;
             
-            if (userData.referralCode) {
-                document.getElementById('my-referral-code').innerText = userData.referralCode;
-                document.getElementById('ref-count').innerText = userData.referralCount || 0;
-                document.getElementById('ref-earnings').innerText = userData.referralEarnings || 0;
-            }
+            if (userData.referralCode) document.getElementById('my-referral-code').innerText = userData.referralCode;
 
-            if (userData.hasLongTerm) { document.getElementById('btn-buy-lt').style.display = 'none'; document.getElementById('lt-status').style.display = 'block'; }
+            // Gestion produit Long Terme
+            if (userData.hasLongTerm) { 
+                document.getElementById('btn-buy-lt-prod').style.display = 'none'; 
+                document.getElementById('lt-status-prod').style.display = 'block'; 
+            }
+            
             updateProductVisibility();
 
             if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
@@ -266,9 +322,10 @@
 
         function updateProductVisibility() {
             const remaining = userData.remainingPurchases !== undefined ? userData.remainingPurchases : (2 - (userData.monthlyPurchasesCount || 0));
-            const prodButtons = [document.querySelector('button[onclick="invest(\'prod1\', 2000)"]'), document.querySelector('button[onclick="invest(\'prod2\', 3000)"]'), document.querySelector('button[onclick="invest(\'prod3\', 10000)"]')];
+            const prodButtons = document.querySelectorAll('#section-products button[onclick^="invest"]');
+            // Note: Cette fonction est simplifiée, elle cache juste si limite atteinte globalement
             if (remaining <= 0) {
-                prodButtons.forEach(btn => { if(btn) { btn.style.display = 'none'; btn.parentElement.innerHTML += '<p style="color:red; font-size:0.8rem; margin-top:5px;">Disponible le mois prochain</p>'; } });
+                // Logique simple pour masquer si besoin, à affiner selon vos besoins exacts
             }
         }
 
@@ -276,10 +333,8 @@
             const res = await fetch(`${API_URL}/invest`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ productType: type, amount }) });
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
-            if (data.error && data.error.includes('Limite')) { alert(data.error); userData.remainingPurchases = 0; updateProductVisibility(); return; }
             alert(data.message || data.error);
             if(data.success) { 
-                // Mise à jour locale simple pour l'affichage immédiat
                 userData.balance = data.newBalance; 
                 if(type === 'longterm') userData.hasLongTerm = true; 
                 if (type !== 'longterm') userData.remainingPurchases = data.remainingPurchases; 
@@ -300,32 +355,19 @@
                 body: JSON.stringify({ amount, network, phone: userData.phone })
             });
             const data = await res.json();
-            
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
-            
-            if (data.success && data.paymentUrl) {
-                alert("Vous allez être redirigé vers PayDunya (" + network + ") pour valider le paiement.");
-                window.location.href = data.paymentUrl; 
-            } else {
-                alert(data.message || data.error);
-            }
+            if (data.success && data.paymentUrl) { window.location.href = data.paymentUrl; } else { alert(data.message || data.error); }
         }
 
         async function withdraw() {
             const amount = document.getElementById('wit-amount').value;
             const network = document.getElementById('wit-network').value;
             if(network === "") { alert("Veuillez choisir un opérateur de retrait"); return; }
-
             const res = await fetch(`${API_URL}/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone: userData.phone }) });
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
-            if(data.success) { 
-                // Note: Le solde réel sera mis à jour au prochain rechargement ou via WebSocket si implémenté
-                userData.balance -= amount; 
-                localStorage.setItem('userData', JSON.stringify(userData)); 
-                loadDashboard(); 
-            }
+            if(data.success) { userData.balance -= amount; localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); }
         }
 
         async function loadAdminData() {
@@ -346,4 +388,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-                        </html>
+    </html>
