@@ -97,7 +97,7 @@
                     </div>
                 </div>
                 <div class="compact-card" style="border-left: 4px solid #FF9800;">
-                    <h4 class="compact-title">💸 RETRAITE</h4>
+                    <h4 class="compact-title"> RETRAITE</h4>
                     <p class="compact-sub">Gains disponibles</p>
                     <div class="compact-balance" style="color: #FF9800;">
                         <span id="withdraw-balance">0</span> FCFA
@@ -123,9 +123,9 @@
             <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
             <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois)</p>
             
-            <div class="card"><p><strong>Produit 1:</strong> 2000 FCFA → 1000 FCFA/jour(5 jours)</p><button onclick="invest('prod1', 2000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 2:</strong> 3000 FCFA → 1500 FCFA/jour(5 jours)</p><button onclick="invest('prod2', 3000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 3:</strong> 10000 FCFA → 5000 FCFA/jour(5 jours)</p><button onclick="invest('prod3', 10000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 1:</strong> 2000 FCFA → 1000 FCFA/jour (5 jours)</p><button onclick="invest('prod1', 2000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 2:</strong> 3000 FCFA → 1500 FCFA/jour (5 jours)</p><button onclick="invest('prod2', 3000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 3:</strong> 10000 FCFA → 5000 FCFA/jour (5 jours)</p><button onclick="invest('prod3', 10000)">Investir</button></div>
         </div>
 
         <!-- 3. SECTION MES PRODUITS (NOUVEAU) -->
@@ -162,12 +162,15 @@
             </div>
         </div>
 
-        <!-- 5. SECTION TRANSACTIONS (CAISSE) -->
+        <!-- 5. SECTION TRANSACTIONS (CAISSE AVEC NUMÉRO) -->
         <div id="section-transactions" class="hidden">
             <h3>💳 Caisse (Lun-Ven, 08h-21h)</h3>
             
             <div class="card">
                 <h4 style="color:#4CAF50">Dépôt</h4>
+                <!-- CHAMP NUMÉRO TÉLÉPHONE AJOUTÉ -->
+                <input type="tel" id="dep-phone" placeholder="Votre numéro mobile (ex: 22870...)" value="">
+                
                 <input type="number" id="dep-amount" placeholder="Montant dépôt (Min 2000)">
                 <select id="dep-network">
                     <option value="" disabled selected>Choisir l'opérateur</option>
@@ -190,19 +193,22 @@
             
             <div class="card">
                 <h4 style="color:#FF9800">Retrait</h4>
+                <!-- CHAMP NUMÉRO TÉLÉPHONE AJOUTÉ -->
+                <input type="tel" id="wit-phone" placeholder="Votre numéro mobile (ex: 22870...)" value="">
+                
                 <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
                 <select id="wit-network">
                     <option value="" disabled selected>Choisir l'opérateur</option>
-                    <optgroup label="🇬 Togo">
+                    <optgroup label="🇹🇬 Togo">
                         <option value="TMONEY">Tmoney (Mixx by Yas)</option>
                         <option value="MOOV_TO">Moov Money Togo</option>
                     </optgroup>
-                    <optgroup label="🇮 Côte d'Ivoire">
+                    <optgroup label="🇨🇮 Côte d'Ivoire">
                         <option value="MTN_CI">MTN Mobile Money CI</option>
                         <option value="MOOV_CI">Moov Money CI</option>
                         <option value="ORANGE_CI">Orange Money CI</option>
                     </optgroup>
-                    <optgroup label="🇧 Bénin">
+                    <optgroup label="🇧🇯 Bénin">
                         <option value="MTN_BJ">MTN Mobile Money Bénin</option>
                         <option value="MOOV_BJ">Moov Money Bénin</option>
                     </optgroup>
@@ -230,7 +236,7 @@
             <span>Produits</span>
         </div>
         <div class="nav-btn" onclick="switchTab('myproducts')">
-            <span class="nav-icon">📦</span>
+            <span class="nav-icon"></span>
             <span>Mes<br>Produits</span>
         </div>
         <div class="nav-btn" onclick="switchTab('account')">
@@ -322,7 +328,7 @@
                 
                 container.innerHTML += `
                     <div class="card active-product">
-                        <h4>🌟 Produit Long Terme</h4>
+                        <h4> Produit Long Terme</h4>
                         <p>Investissement: 2000 FCFA</p>
                         <p>Gain quotidien: 700 FCFA</p>
                         <div class="product-status">⏳ Durée restante: ${daysLeft > 0 ? daysLeft : 0} jours</div>
@@ -352,7 +358,7 @@
                             <p>Investissement: ${prod.amount} FCFA</p>
                             <p>Gain quotidien: ${prod.dailyGain} FCFA</p>
                             <div class="product-status">
-                                ${isLocked ? `⏳ Bloqué encore ${daysLeft} jour(s)` : '✅ Terminé - Gains disponibles'}
+                                ${isLocked ? ` Bloqué encore ${daysLeft} jour(s)` : '✅ Terminé - Gains disponibles'}
                             </div>
                         </div>
                     `;
@@ -419,27 +425,40 @@
             }
         }
 
+        // FONCTION DÉPÔT AVEC NUMÉRO
         async function deposit() {
+            const phone = document.getElementById('dep-phone').value;
             const amount = document.getElementById('dep-amount').value;
             const network = document.getElementById('dep-network').value;
+            
+            if(!phone || phone.length < 8) { alert("Veuillez entrer un numéro de téléphone valide"); return; }
             if(!amount || amount < 2000) { alert("Minimum 2000 FCFA"); return; }
             if(network === "") { alert("Veuillez choisir un opérateur"); return; }
             
             const res = await fetch(`${API_URL}/deposit`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-                body: JSON.stringify({ amount, network, phone: userData.phone })
+                body: JSON.stringify({ amount, network, phone })
             });
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             if (data.success && data.paymentUrl) { window.location.href = data.paymentUrl; } else { alert(data.message || data.error); }
         }
 
+        // FONCTION RETRAIT AVEC NUMÉRO
         async function withdraw() {
+            const phone = document.getElementById('wit-phone').value;
             const amount = document.getElementById('wit-amount').value;
             const network = document.getElementById('wit-network').value;
+            
+            if(!phone || phone.length < 8) { alert("Veuillez entrer un numéro de téléphone valide"); return; }
             if(network === "") { alert("Veuillez choisir un opérateur de retrait"); return; }
-            const res = await fetch(`${API_URL}/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone: userData.phone }) });
+            
+            const res = await fetch(`${API_URL}/withdraw`, { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, 
+                body: JSON.stringify({ amount, network, phone }) 
+            });
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
@@ -464,4 +483,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-                                                                                           </html>
+                            </html>
