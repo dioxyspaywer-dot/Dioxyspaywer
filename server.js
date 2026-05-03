@@ -19,17 +19,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let isSiteActive = true;
 
-// Connexion à MongoDB
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Base de données connectée'))
     .catch(err => console.error('❌ Erreur DB:', err));
 
-// --- MIDDLEWARE AUTHENTIFICATION ---
 const authMiddleware = async (req, res, next) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     const token = req.headers.authorization;
     if (!token) return res.status(401).json({ error: 'Accès refusé' });
-    
     try {
         const decoded = jwt.verify(token.split(' ')[1], process.env.JWT_SECRET);
         req.user = await User.findById(decoded.id);
@@ -42,52 +39,34 @@ const authMiddleware = async (req, res, next) => {
     }
 };
 
-// --- INSCRIPTION AVEC PARRAINAGE ---
 app.post('/api/register', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
-    
     const { fullName, phone, country, password, referralCode } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
-    
     let role = 'user';
     if (phone === process.env.CREATOR_WALLET_PHONE) role = 'admin';
-
     let referredByUserId = null;
 
-    // Logique de Parrainage
     if (referralCode && referralCode.trim() !== '') {
         const sponsor = await User.findOne({ referralCode: referralCode.trim() });
         if (sponsor) {
             referredByUserId = sponsor._id;
-            
-            // BONUS DE 350 FCFA AU PARRAIN
             sponsor.balance += 350; 
             sponsor.referralCount += 1;
             sponsor.referralEarnings += 350;
             await sponsor.save();
-
-            await Transaction.create({
-                userId: sponsor._id,
-                type: 'REFERRAL_BONUS',
-                amount: 350,
-                method: 'Parrainage',
-                status: 'SUCCESS',
-                reference: `REF_${Date.now()}`
-            });
+            await Transaction.create({ userId: sponsor._id, type: 'REFERRAL_BONUS', amount: 350, method: 'Parrainage', status: 'SUCCESS', reference: `REF_${Date.now()}` });
         }
     }
-
     try {
-        await User.create({ 
-            fullName, phone, country, password: hashedPassword, role, referredBy: referredByUserId 
-        });
+        await User.create({ fullName, phone, country, password: hashedPassword, role, referredBy: referredByUserId });
         res.json({ success: true, message: 'Inscription réussie' });
     } catch (e) {
         res.status(400).json({ error: 'Numéro déjà utilisé' });
     }
 });
 
-// --- CONNEXION (AVEC CALCUL DU SOLDE RETRAIT) ---
+// --- CONNEXION AVEC HISTORIQUE ---
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     const { phone, password } = req.body;
@@ -105,44 +84,34 @@ app.post('/api/login', async (req, res) => {
 
     const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     
-    // --- CALCUL DU SOLDE DE RETRAIT CÔTÉ SERVEUR ---
+    // Calcul Solde Retrait
     let withdrawBalance = 0;
     const now = new Date();
-
-    // 1. Produits courts termes terminés
     if (user.shortTermProducts && user.shortTermProducts.length > 0) {
         user.shortTermProducts.forEach(prod => {
             const unlockDate = new Date(prod.unlockDate);
             if (unlockDate <= now) {
-                // Produit fini : Capital + Gains totaux (5 jours * gain journalier)
                 const totalGains = prod.dailyGain * 5; 
                 withdrawBalance += (prod.amount + totalGains);
             }
         });
     }
-
-    // 2. Produit Long Terme
     if (user.hasLongTerm && user.longTermStartDate) {
         const startDate = new Date(user.longTermStartDate);
         const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-        
-        if (daysPassed >= 55) {
-            // Terminé : Tous les gains (55 * 700)
-            withdrawBalance += (700 * 55);
-        } else if (daysPassed > 0) {
-            // En cours : Gains générés jusqu'à aujourd'hui (disponibles au retrait partiel si voulu, ou total à la fin)
-            // Ici on considère que les gains journaliers s'accumulent dans le solde de retrait
-            withdrawBalance += (700 * daysPassed);
-        }
+        if (daysPassed >= 55) withdrawBalance += (700 * 55);
+        else if (daysPassed > 0) withdrawBalance += (700 * daysPassed);
     }
-    // -----------------------------------------------
+
+    // Récupération de l'historique des transactions (limité aux 50 dernières pour la performance)
+    const transactions = await Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50);
 
     res.json({ 
         token, 
         role: user.role, 
         balance: user.balance,
-        depositBalance: user.balance, // Solde pour achats
-        withdrawBalance: withdrawBalance, // Solde calculé pour retraits
+        depositBalance: user.balance,
+        withdrawBalance: withdrawBalance,
         hasLongTerm: user.hasLongTerm, 
         fullName: user.fullName,
         monthlyPurchasesCount: user.monthlyPurchasesCount,
@@ -150,40 +119,31 @@ app.post('/api/login', async (req, res) => {
         shortTermProducts: user.shortTermProducts,
         referralCode: user.referralCode, 
         referralCount: user.referralCount, 
-        referralEarnings: user.referralEarnings
+        referralEarnings: user.referralEarnings,
+        transactions: transactions // Envoi de l'historique
     });
 });
 
 app.get('/api/status', (req, res) => res.json({ active: isSiteActive }));
 
-// --- GAINS AUTOMATIQUES (Lun-Ven 8h) ---
-// Cette fonction crédite les gains quotidiens dans le solde global (dépôt)
 cron.schedule('0 8 * * 1-5', async () => {
     if (!isSiteActive) return;
     const users = await User.find({ $or: [{ hasLongTerm: true }, { 'shortTermProducts.0': { $exists: true } }] });
     const now = new Date();
-
     for (let user of users) {
         let totalDailyGain = 0;
-        
-        // Calcul gain Long Terme
         if (user.hasLongTerm) {
             const daysPassed = Math.floor((now - user.longTermStartDate) / (1000 * 60 * 60 * 24));
             if (daysPassed < 55) totalDailyGain += 700;
         }
-
-        // Calcul gain Courts Termes et nettoyage des produits expirés
         const activeShortTerms = [];
         for (let prod of user.shortTermProducts) {
             if (prod.unlockDate > now) {
-                // Produit encore actif
                 totalDailyGain += prod.dailyGain;
                 activeShortTerms.push(prod);
             }
-            // Si produit expiré, il n'est plus ajouté à la liste active, mais son capital+gains sont déjà comptabilisés dans le calcul de withdrawBalance
         }
         user.shortTermProducts = activeShortTerms;
-
         if (totalDailyGain > 0) {
             user.balance += totalDailyGain;
             await user.save();
@@ -192,25 +152,17 @@ cron.schedule('0 8 * * 1-5', async () => {
     }
 });
 
-// --- INVESTISSEMENT ---
 app.post('/api/invest', authMiddleware, async (req, res) => {
     const { productType, amount } = req.body;
     const user = req.user;
-    
-    // Vérification du solde DÉPÔT
     if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
-    
     if (productType !== 'longterm' && !user.hasLongTerm) return res.status(403).json({ error: 'Produit Long Terme obligatoire.' });
-
     const currentMonth = new Date().toISOString().slice(0, 7);
     if (user.lastPurchaseMonth !== currentMonth) { user.monthlyPurchasesCount = 0; user.lastPurchaseMonth = currentMonth; }
-
     if (productType !== 'longterm') {
         if (user.monthlyPurchasesCount >= 2) return res.status(403).json({ error: 'Limite 2 achats/mois atteinte.' });
     }
-
-    user.balance -= amount; // Déduit du solde DÉPÔT
-    
+    user.balance -= amount;
     if (productType === 'longterm') {
         if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
         user.hasLongTerm = true; 
@@ -220,30 +172,21 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
         if (productType === 'prod1') dailyGain = 1000;
         if (productType === 'prod2') dailyGain = 1500;
         if (productType === 'prod3') dailyGain = 5000;
-        
         const unlockDate = new Date(); unlockDate.setDate(unlockDate.getDate() + 5);
         user.shortTermProducts.push({ type: productType, amount, dailyGain, startDate: new Date(), unlockDate });
         user.monthlyPurchasesCount += 1;
     }
     await user.save();
     await Transaction.create({ userId: user._id, type: 'INVESTMENT', amount, status: 'SUCCESS', reference: `INV_${Date.now()}` });
-    
-    res.json({ 
-        success: true, 
-        newBalance: user.balance, 
-        remainingPurchases: 2 - user.monthlyPurchasesCount 
-    });
+    res.json({ success: true, newBalance: user.balance, remainingPurchases: 2 - user.monthlyPurchasesCount });
 });
 
-// --- DÉPÔT AVEC PAYDUNYA ---
 app.post('/api/deposit', authMiddleware, async (req, res) => {
     const { amount, network, phone } = req.body; 
     if (amount < 2000) return res.status(400).json({ error: 'Minimum 2000 FCFA' });
-
     try {
         const user = req.user;
         const invoiceNumber = `DXP_${Date.now()}`;
-        
         const postData = {
             "master_key": process.env.PAYDUNYA_MASTER_KEY,
             "token": process.env.PAYDUNYA_SIGNATURE_TOKEN,
@@ -254,66 +197,37 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
             "description": `Dépôt Dioxyspaywer - ${user.fullName}`,
             "total_amount": amount,
             "currency": "XOF",
-            "customer": {
-                "first_name": user.fullName.split(' ')[0],
-                "last_name": user.fullName.split(' ').slice(1).join(' '),
-                "phone_number": phone
-            },
-            "custom_data": {
-                "user_id": user._id.toString(),
-                "network": network
-            }
+            "customer": { "first_name": user.fullName.split(' ')[0], "last_name": user.fullName.split(' ').slice(1).join(' '), "phone_number": phone },
+            "custom_data": { "user_id": user._id.toString(), "network": network }
         };
-
         const response = await axios.post('https://paydunya.com/checkout-invoice/v1/invoice', postData, {
-            headers: {
-                'Content-Type': 'application/json',
-                'PayDunya-Master-Key': process.env.PAYDUNYA_MASTER_KEY,
-                'PayDunya-Token': process.env.PAYDUNYA_SIGNATURE_TOKEN
-            }
+            headers: { 'Content-Type': 'application/json', 'PayDunya-Master-Key': process.env.PAYDUNYA_MASTER_KEY, 'PayDunya-Token': process.env.PAYDUNYA_SIGNATURE_TOKEN }
         });
-
         if (response.data && response.data.response_code === "success") {
             const paymentUrl = response.data.checkout_url;
-            
-            await Transaction.create({
-                userId: user._id,
-                type: 'DEPOSIT',
-                amount: amount,
-                method: network,
-                status: 'PENDING',
-                reference: invoiceNumber
-            });
-
+            await Transaction.create({ userId: user._id, type: 'DEPOSIT', amount: amount, method: network, status: 'PENDING', reference: invoiceNumber });
             res.json({ success: true, message: 'Redirection vers PayDunya...', paymentUrl: paymentUrl });
         } else {
             res.status(400).json({ error: 'Erreur création paiement PayDunya.' });
         }
-
     } catch (error) {
         console.error(error.response ? error.response.data : error);
         res.status(500).json({ error: 'Erreur connexion PayDunya.' });
     }
 });
 
-// --- WEBHOOK PAYDUNYA ---
 app.post('/api/webhook/deposit', async (req, res) => {
     const data = req.body;
-    
     if (data.event === "payment_completed" || data.status === "completed") {
         const invoiceNumber = data.invoice_number;
         const amount = parseFloat(data.total_amount);
         const customData = data.custom_data;
-
         if (customData && customData.user_id) {
             const transaction = await Transaction.findOne({ reference: invoiceNumber }).populate('userId');
-            
             if (transaction && transaction.status === 'PENDING') {
                 transaction.status = 'SUCCESS';
                 await transaction.save();
-
                 const user = transaction.userId;
-                // Ajout au solde DÉPÔT (balance global)
                 user.balance += amount;
                 await user.save();
                 console.log(`💰 Dépôt PayDunya confirmé : ${amount} FCFA`);
@@ -323,30 +237,19 @@ app.post('/api/webhook/deposit', async (req, res) => {
     res.status(200).send("OK");
 });
 
-// --- RETRAIT (Règles strictes + Vérification Solde Retrait) ---
 app.post('/api/withdraw', authMiddleware, async (req, res) => {
     const { amount, network, phone } = req.body;
     const user = req.user;
     const now = new Date();
-
     if (amount < 1000) return res.status(400).json({ error: 'Min 1000 FCFA' });
-    
-    // 1. Jours autorisés (Lun=1 à Ven=5)
     const dayOfWeek = now.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) return res.status(403).json({ error: 'Retraits indisponibles Samedi/Dimanche.' });
-
-    // 2. Heures autorisées (08h00 à 21h00)
     const currentHour = now.getHours();
     if (currentHour < 8 || currentHour >= 21) return res.status(403).json({ error: 'Retraits possibles de 08h00 à 21h00.' });
-
-    // 3. Fréquence (1 par jour)
     const todayStr = now.toDateString();
     if (user.lastWithdrawDate && user.lastWithdrawDate.toDateString() === todayStr) return res.status(403).json({ error: '1 retrait/jour max.' });
 
-    // 4. Vérification du solde de retrait (Calculé dynamiquement comme dans login)
     let availableWithdrawBalance = 0;
-    
-    // Produits courts termes terminés
     if (user.shortTermProducts && user.shortTermProducts.length > 0) {
         user.shortTermProducts.forEach(prod => {
             const unlockDate = new Date(prod.unlockDate);
@@ -356,26 +259,18 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
             }
         });
     }
-    // Produit Long Terme
     if (user.hasLongTerm && user.longTermStartDate) {
         const startDate = new Date(user.longTermStartDate);
         const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-        if (daysPassed >= 55) {
-            availableWithdrawBalance += (700 * 55);
-        } else if (daysPassed > 0) {
-            availableWithdrawBalance += (700 * daysPassed);
-        }
+        if (daysPassed >= 55) availableWithdrawBalance += (700 * 55);
+        else if (daysPassed > 0) availableWithdrawBalance += (700 * daysPassed);
     }
 
-    if (amount > availableWithdrawBalance) {
-        return res.status(400).json({ error: `Solde insuffisant dans la section RETRAITE. Disponible: ${availableWithdrawBalance} FCFA` });
-    }
+    if (amount > availableWithdrawBalance) return res.status(400).json({ error: `Solde insuffisant dans la section RETRAITE. Disponible: ${availableWithdrawBalance} FCFA` });
 
-    // Si tout est bon, on déduit du solde global (balance) car c'est là que l'argent physique se trouve
     user.balance -= amount;
     user.lastWithdrawDate = now;
     await user.save();
-
     try {
         await Transaction.create({ userId: user._id, type: 'WITHDRAWAL', amount, method: network, status: 'SUCCESS', reference: `PAYOUT_${Date.now()}` });
         res.json({ success: true, message: 'Retrait envoyé.' });
@@ -385,7 +280,6 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
     }
 });
 
-// --- ADMIN / COFFRE-FORT ---
 app.get('/api/admin/dashboard', async (req, res) => {
     if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Accès réservé créateur.' });
     const users = await User.find();
