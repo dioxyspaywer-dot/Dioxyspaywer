@@ -16,14 +16,12 @@
         h1, h2, h3, h4 { text-align: center; color: #ffd700; margin-top: 0; }
         .balance { font-size: 2rem; color: #00e676; text-align: center; font-weight: bold; }
         
-        /* Styles pour les cartes compactes (Solde) */
         .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .compact-card { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; margin-bottom: 0; text-align: center; }
         .compact-title { color: #ffd700; margin: 0 0 8px 0; font-size: 1rem; font-weight: bold; }
         .compact-sub { font-size: 0.75rem; color: #ccc; margin: 0 0 5px 0; }
         .compact-balance { font-size: 1.3rem; margin: 5px 0; font-weight: bold; }
 
-        /* Barre de navigation */
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: #1a1a2e; display: flex; justify-content: space-around;
@@ -38,20 +36,16 @@
         .cross-icon { width: 200px; height: 200px; fill: #ff0000; }
         #admin-section { border: 2px solid red; padding: 20px; margin-top: 30px; display: none; }
         select option { background: #0f2027; color: white; }
-        
-        /* Style spécifique pour la liste des mes produits */
         .product-status { font-size: 0.8rem; color: #aaa; margin-top: 5px; }
         .active-product { border-left-color: #00e676 !important; }
     </style>
 </head>
 <body>
 
-    <!-- ÉCRAN CROIX -->
     <div id="closed-screen" class="hidden">
         <svg class="cross-icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
     </div>
 
-    <!-- AUTHENTIFICATION -->
     <div class="container" id="auth-container">
         <h1>Dioxyspaywer</h1>
         <div id="login-form">
@@ -77,17 +71,14 @@
         </div>
     </div>
 
-    <!-- CONTENU PRINCIPAL -->
     <div class="container hidden" id="main-content">
         
-        <!-- 1. SECTION TABLEAU DE BORD (SOLDES) -->
         <div id="section-dashboard">
             <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 20px;">
                 <h3 id="user-welcome" style="margin:0;">Bonjour</h3>
                 <button onclick="logout()" style="width:auto; padding:5px 10px; background:red; color:white; font-size: 0.8rem; margin:0;">Déconnexion</button>
             </div>
 
-            <!-- SOLDES -->
             <div class="compact-grid">
                 <div class="compact-card" style="border-left: 4px solid #4CAF50;">
                     <h4 class="compact-title"> DÉPÔT</h4>
@@ -104,11 +95,9 @@
                     </div>
                 </div>
             </div>
-            
             <p style="text-align: center; color: #aaa; font-size: 0.9rem;">Bienvenue sur votre tableau de bord.</p>
         </div>
 
-        <!-- 2. SECTION PRODUITS (ACHATS) -->
         <div id="section-products" class="hidden">
             <h3>🛒 Boutique d'Investissement</h3>
             <p style="font-size:0.8rem; color:#ccc;">Achetez ici vos nouveaux produits.</p>
@@ -123,33 +112,25 @@
             <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
             <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois)</p>
             
-            <div class="card"><p><strong>Produit 1:</strong> 2000 FCFA → 1000 FCFA/jour (5 jours)</p><button onclick="invest('prod1', 2000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 2:</strong> 3000 FCFA → 1500 FCFA/jour (5 jours)</p><button onclick="invest('prod2', 3000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 3:</strong> 10000 FCFA → 5000 FCFA/jour (5 jours)</p><button onclick="invest('prod3', 10000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 1:</strong> 2000 FCFA → 1000 FCFA/j</p><button onclick="invest('prod1', 2000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 2:</strong> 3000 FCFA → 1500 FCFA/j</p><button onclick="invest('prod2', 3000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 3:</strong> 10000 FCFA → 5000 FCFA/j</p><button onclick="invest('prod3', 10000)">Investir</button></div>
         </div>
 
-        <!-- 3. SECTION MES PRODUITS (NOUVEAU) -->
         <div id="section-myproducts" class="hidden">
             <h3> Mes Produits Actifs</h3>
             <p style="font-size:0.8rem; color:#ccc;">Suivez vos investissements en cours.</p>
-            
-            <div id="my-products-list">
-                <!-- Le contenu sera généré dynamiquement par JS -->
-                <p style="color:#aaa; margin-top:20px;">Aucun produit actif pour le moment.</p>
-            </div>
+            <div id="my-products-list"></div>
         </div>
 
-        <!-- 4. SECTION COMPTE (INFOS + PARRAINAGE) -->
         <div id="section-account" class="hidden">
             <h3> Mon Compte</h3>
-            
             <div class="card">
                 <h4>Informations</h4>
                 <p><strong>Nom :</strong> <span id="acc-name">-</span></p>
                 <p><strong>Téléphone :</strong> <span id="acc-phone">-</span></p>
                 <p><strong>Pays :</strong> <span id="acc-country">-</span></p>
             </div>
-
             <div class="card" style="border-left-color: #00bcd4;">
                 <h4> Mon Parrainage</h4>
                 <p>Votre code unique :</p>
@@ -162,91 +143,47 @@
             </div>
         </div>
 
-        <!-- 5. SECTION TRANSACTIONS (CAISSE AVEC NUMÉRO) -->
         <div id="section-transactions" class="hidden">
             <h3>💳 Caisse (Lun-Ven, 08h-21h)</h3>
-            
             <div class="card">
                 <h4 style="color:#4CAF50">Dépôt</h4>
-                <!-- CHAMP NUMÉRO TÉLÉPHONE AJOUTÉ -->
-                <input type="tel" id="dep-phone" placeholder="Votre numéro mobile (ex:+2289864...)" value="">
-                
+                <input type="tel" id="dep-phone" placeholder="Votre numéro mobile" value="">
                 <input type="number" id="dep-amount" placeholder="Montant dépôt (Min 2000)">
                 <select id="dep-network">
                     <option value="" disabled selected>Choisir l'opérateur</option>
-                    <optgroup label="🇹🇬 Togo">
-                        <option value="TMONEY">Tmoney (Mixx by Yas)</option>
-                        <option value="MOOV_TO">Moov Money Togo</option>
-                    </optgroup>
-                    <optgroup label="🇨🇮 Côte d'Ivoire">
-                        <option value="MTN_CI">MTN Mobile Money CI</option>
-                        <option value="MOOV_CI">Moov Money CI</option>
-                        <option value="ORANGE_CI">Orange Money CI</option>
-                    </optgroup>
-                    <optgroup label="🇧🇯 Bénin">
-                        <option value="MTN_BJ">MTN Mobile Money Bénin</option>
-                        <option value="MOOV_BJ">Moov Money Bénin</option>
-                    </optgroup>
+                    <optgroup label="🇬 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
+                    <optgroup label="🇨 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option><option value="ORANGE_CI">Orange CI</option></optgroup>
+                    <optgroup label="🇧🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
-                <button class="secondary" onclick="deposit()">Déposer via PayDunya</button>
+                <button class="secondary" onclick="deposit()">Déposer</button>
             </div>
-            
             <div class="card">
                 <h4 style="color:#FF9800">Retrait</h4>
-                <!-- CHAMP NUMÉRO TÉLÉPHONE AJOUTÉ -->
-                <input type="tel" id="wit-phone" placeholder="Votre numéro mobile (ex: 22870...)" value="">
-                
+                <input type="tel" id="wit-phone" placeholder="Votre numéro mobile" value="">
                 <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
                 <select id="wit-network">
                     <option value="" disabled selected>Choisir l'opérateur</option>
-                    <optgroup label="🇹🇬 Togo">
-                        <option value="TMONEY">Tmoney (Mixx by Yas)</option>
-                        <option value="MOOV_TO">Moov Money Togo</option>
-                    </optgroup>
-                    <optgroup label="🇨🇮 Côte d'Ivoire">
-                        <option value="MTN_CI">MTN Mobile Money CI</option>
-                        <option value="MOOV_CI">Moov Money CI</option>
-                        <option value="ORANGE_CI">Orange Money CI</option>
-                    </optgroup>
-                    <optgroup label="🇧🇯 Bénin">
-                        <option value="MTN_BJ">MTN Mobile Money Bénin</option>
-                        <option value="MOOV_BJ">Moov Money Bénin</option>
-                    </optgroup>
+                    <optgroup label="🇬 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
+                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option><option value="ORANGE_CI">Orange CI</option></optgroup>
+                    <optgroup label="🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button onclick="withdraw()">Retirer</button>
             </div>
         </div>
 
-        <!-- SECTION CRÉATEUR (Admin) -->
         <div id="admin-section">
             <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
             <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
-            <button class="danger" onclick="emergencyStop()">⚠️ DÉSACTIVER LE SITE (CROIX ROUGE)</button>
+            <button class="danger" onclick="emergencyStop()">⚠️ DÉSACTIVER LE SITE</button>
         </div>
     </div>
 
-    <!-- BARRE DE NAVIGATION EN BAS (5 OPTIONS) -->
     <div class="bottom-nav">
-        <div class="nav-btn active" onclick="switchTab('dashboard')">
-            <span class="nav-icon">🏠</span>
-            <span>Tableau<br>de bord</span>
-        </div>
-        <div class="nav-btn" onclick="switchTab('products')">
-            <span class="nav-icon">💲</span>
-            <span>Produits</span>
-        </div>
-        <div class="nav-btn" onclick="switchTab('myproducts')">
-            <span class="nav-icon">📦</span>
-            <span>Mes<br>Produits</span>
-        </div>
-        <div class="nav-btn" onclick="switchTab('account')">
-            <span class="nav-icon">👤</span>
-            <span>Compte</span>
-        </div>
-        <div class="nav-btn" onclick="switchTab('transactions')">
-            <span class="nav-icon">💳</span>
-            <span>Transactions</span>
-        </div>
+        <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon"></span><span>Tableau<br>de bord</span></div>
+        <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon">🛒</span><span>Produits</span></div>
+        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon">📦</span><span>Mes<br>Produits</span></div>
+        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon"></span><span>Compte</span></div>
+        <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Transactions</span></div>
     </div>
 
     <script>
@@ -254,34 +191,18 @@
         let token = localStorage.getItem('token');
         let userData = JSON.parse(localStorage.getItem('userData'));
 
-        // GESTION DE LA NAVIGATION (5 ONGLETS)
         function switchTab(tabName) {
-            // Cacher toutes les sections
-            document.getElementById('section-dashboard').classList.add('hidden');
-            document.getElementById('section-products').classList.add('hidden');
-            document.getElementById('section-myproducts').classList.add('hidden');
-            document.getElementById('section-account').classList.add('hidden');
-            document.getElementById('section-transactions').classList.add('hidden');
-            
-            // Afficher la section demandée
-            document.getElementById('section-' + tabName).classList.remove('hidden');
-            
-            // Mettre à jour les boutons (5 boutons)
-            const btns = document.querySelectorAll('.nav-btn');
-            btns.forEach(b => b.classList.remove('active'));
-            
-            if(tabName === 'dashboard') btns[0].classList.add('active');
-            if(tabName === 'products') btns[1].classList.add('active');
-            if(tabName === 'myproducts') btns[2].classList.add('active');
-            if(tabName === 'account') btns[3].classList.add('active');
-            if(tabName === 'transactions') btns[4].classList.add('active');
+            ['dashboard','products','myproducts','account','transactions'].forEach(t => document.getElementById('section-'+t).classList.add('hidden'));
+            document.getElementById('section-'+tabName).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const index = ['dashboard','products','myproducts','account','transactions'].indexOf(tabName);
+            if(index >= 0) document.querySelectorAll('.nav-btn')[index].classList.add('active');
         }
 
         function showClosedScreen() {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('main-content').classList.add('hidden');
             document.getElementById('closed-screen').classList.remove('hidden');
-            document.body.style.backgroundColor = '#000000';
         }
 
         async function checkSiteStatus() {
@@ -307,102 +228,93 @@
         }
 
         function logout() { localStorage.clear(); location.reload(); }
+        function copyReferralCode() { navigator.clipboard.writeText(document.getElementById('my-referral-code').innerText).then(() => alert('Copié !')); }
 
-        function copyReferralCode() {
-            const code = document.getElementById('my-referral-code').innerText;
-            navigator.clipboard.writeText(code).then(() => alert('Code copié !')).catch(() => alert('Erreur copie'));
-        }
-
-        // FONCTION POUR AFFICHER LES PRODUITS ACTIFS
-        function renderMyProducts() {
-            const container = document.getElementById('my-products-list');
-            container.innerHTML = ''; // Vider le contenu
-
-            let hasProducts = false;
-
-            // Vérifier Long Terme
-            if (userData.hasLongTerm) {
-                hasProducts = true;
-                const daysPassed = Math.floor((new Date() - new Date(userData.longTermStartDate)) / (1000 * 60 * 60 * 24));
-                const daysLeft = 55 - daysPassed;
-                
-                container.innerHTML += `
-                    <div class="card active-product">
-                        <h4> Produit Long Terme</h4>
-                        <p>Investissement: 2000 FCFA</p>
-                        <p>Gain quotidien: 700 FCFA</p>
-                        <div class="product-status">⏳ Durée restante: ${daysLeft > 0 ? daysLeft : 0} jours</div>
-                        <div class="product-status" style="color:#00e676">Statut: En cours de génération</div>
-                    </div>
-                `;
-            }
-
-            // Vérifier Courts Termes
+        // --- NOUVELLE FONCTION DE CALCUL DU SOLDE RETRAIT ---
+        function calculateWithdrawBalance() {
+            let withdrawableAmount = 0;
+            const now = new Date();
+            
+            // 1. Produits courts termes terminés
             if (userData.shortTermProducts && userData.shortTermProducts.length > 0) {
-                hasProducts = true;
-                const now = new Date();
-                
-                userData.shortTermProducts.forEach((prod, index) => {
+                userData.shortTermProducts.forEach(prod => {
                     const unlockDate = new Date(prod.unlockDate);
-                    const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
-                    const isLocked = daysLeft > 0;
-                    
-                    let prodName = "Produit Court Terme";
-                    if(prod.type === 'prod1') prodName = "Produit 1 (Rapide)";
-                    if(prod.type === 'prod2') prodName = "Produit 2 (Standard)";
-                    if(prod.type === 'prod3') prodName = "Produit 3 (Premium)";
-
-                    container.innerHTML += `
-                        <div class="card ${isLocked ? '' : 'active-product'}" style="border-left-color: ${isLocked ? '#ff9800' : '#00e676'}">
-                            <h4>${prodName}</h4>
-                            <p>Investissement: ${prod.amount} FCFA</p>
-                            <p>Gain quotidien: ${prod.dailyGain} FCFA</p>
-                            <div class="product-status">
-                                ${isLocked ? ` Bloqué encore ${daysLeft} jour(s)` : '✅ Terminé - Gains disponibles'}
-                            </div>
-                        </div>
-                    `;
+                    if (unlockDate <= now) {
+                        // Produit fini : Capital + Gains totaux (5 jours * gain journalier)
+                        const totalGains = prod.dailyGain * 5; 
+                        withdrawableAmount += (prod.amount + totalGains);
+                    }
                 });
             }
-
-            if (!hasProducts) {
-                container.innerHTML = '<p style="color:#aaa; margin-top:20px;">Vous n\'avez aucun produit actif pour le moment.<br>Allez dans l\'onglet "Produits" pour investir.</p>';
+            
+            // 2. Produit Long Terme
+            if (userData.hasLongTerm && userData.longTermStartDate) {
+                const startDate = new Date(userData.longTermStartDate);
+                const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+                
+                if (daysPassed >= 55) {
+                    // Terminé : Tous les gains (55 * 700)
+                    withdrawableAmount += (700 * 55);
+                } else if (daysPassed > 0) {
+                    // En cours : Gains générés jusqu'à aujourd'hui
+                    withdrawableAmount += (700 * daysPassed);
+                }
             }
+            return withdrawableAmount;
+        }
+
+        function renderMyProducts() {
+            const container = document.getElementById('my-products-list');
+            container.innerHTML = '';
+            let hasProducts = false;
+            const now = new Date();
+
+            if (userData.hasLongTerm) {
+                hasProducts = true;
+                const daysPassed = Math.floor((now - new Date(userData.longTermStartDate)) / (1000 * 60 * 60 * 24));
+                const daysLeft = Math.max(0, 55 - daysPassed);
+                container.innerHTML += `<div class="card active-product"><h4>⭐ Long Terme</h4><p>Gain/jour: 700 FCFA</p><div class="product-status"> ${daysLeft} jours restants</div></div>`;
+            }
+
+            if (userData.shortTermProducts) {
+                userData.shortTermProducts.forEach(prod => {
+                    hasProducts = true;
+                    const unlockDate = new Date(prod.unlockDate);
+                    const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
+                    const isFinished = daysLeft <= 0;
+                    let name = "Court Terme";
+                    if(prod.type === 'prod1') name = "Produit 1";
+                    if(prod.type === 'prod2') name = "Produit 2";
+                    if(prod.type === 'prod3') name = "Produit 3";
+                    
+                    container.innerHTML += `<div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}"><h4>${name}</h4><p>Gain/jour: ${prod.dailyGain} FCFA</p><div class="product-status">${isFinished?'✅ Terminé (Gains dispo)':' '+daysLeft+' jours restants'}</div></div>`;
+                });
+            }
+            if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
         }
 
         function loadDashboard() {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
-            
-            // Initialiser sur l'onglet Dashboard
             switchTab('dashboard');
-
             document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
-            
-            // Remplir infos compte
             document.getElementById('acc-name').innerText = userData.fullName;
             document.getElementById('acc-phone').innerText = userData.phone;
             document.getElementById('acc-country').innerText = userData.country;
             document.getElementById('acc-ref-count').innerText = userData.referralCount || 0;
             document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
             
-            // Soldes
-            const depositBal = userData.depositBalance !== undefined ? userData.depositBalance : (userData.balance || 0);
-            const withdrawBal = userData.withdrawBalance !== undefined ? userData.withdrawBalance : 0;
+            // Calcul des soldes
+            const depositBal = userData.balance || 0;
+            const withdrawBal = calculateWithdrawBalance(); // Utilisation de la nouvelle fonction
+            
             document.getElementById('deposit-balance').innerText = depositBal;
             document.getElementById('withdraw-balance').innerText = withdrawBal;
             
             if (userData.referralCode) document.getElementById('my-referral-code').innerText = userData.referralCode;
-
-            // Gestion produit Long Terme (Boutique)
-            if (userData.hasLongTerm) { 
-                document.getElementById('btn-buy-lt-shop').style.display = 'none'; 
-                document.getElementById('lt-status-shop').style.display = 'block'; 
-            }
+            if (userData.hasLongTerm) { document.getElementById('btn-buy-lt-shop').style.display = 'none'; document.getElementById('lt-status-shop').style.display = 'block'; }
             
-            // Générer la liste "Mes Produits"
             renderMyProducts();
-
             if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
         }
 
@@ -415,54 +327,56 @@
                 userData.balance = data.newBalance; 
                 if(type === 'longterm') userData.hasLongTerm = true; 
                 if (type !== 'longterm') {
-                    // Mise à jour simple pour l'affichage local
                     if(!userData.shortTermProducts) userData.shortTermProducts = [];
                     userData.shortTermProducts.push({type: type, amount: amount, dailyGain: type==='prod1'?1000:type==='prod2'?1500:5000, unlockDate: new Date(Date.now() + 5*24*60*60*1000)});
-                    userData.remainingPurchases = data.remainingPurchases; 
                 }
                 localStorage.setItem('userData', JSON.stringify(userData)); 
-                loadDashboard(); // Recharge tout pour mettre à jour "Mes Produits"
+                loadDashboard(); 
             }
         }
 
-        // FONCTION DÉPÔT AVEC NUMÉRO
         async function deposit() {
             const phone = document.getElementById('dep-phone').value;
             const amount = document.getElementById('dep-amount').value;
             const network = document.getElementById('dep-network').value;
-            
-            if(!phone || phone.length < 8) { alert("Veuillez entrer un numéro de téléphone valide"); return; }
-            if(!amount || amount < 2000) { alert("Minimum 2000 FCFA"); return; }
-            if(network === "") { alert("Veuillez choisir un opérateur"); return; }
-            
-            const res = await fetch(`${API_URL}/deposit`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`},
-                body: JSON.stringify({ amount, network, phone })
-            });
+            if(!phone || phone.length < 8) { alert("Numéro invalide"); return; }
+            if(!amount || amount < 2000) { alert("Min 2000 FCFA"); return; }
+            if(network === "") { alert("Choisissez un opérateur"); return; }
+            const res = await fetch(`${API_URL}/deposit`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone }) });
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             if (data.success && data.paymentUrl) { window.location.href = data.paymentUrl; } else { alert(data.message || data.error); }
         }
 
-        // FONCTION RETRAIT AVEC NUMÉRO
+        // --- FONCTION RETRAIT MODIFIÉE AVEC VÉRIFICATION DU SOLDE ---
         async function withdraw() {
             const phone = document.getElementById('wit-phone').value;
-            const amount = document.getElementById('wit-amount').value;
+            const amount = parseFloat(document.getElementById('wit-amount').value);
             const network = document.getElementById('wit-network').value;
             
-            if(!phone || phone.length < 8) { alert("Veuillez entrer un numéro de téléphone valide"); return; }
-            if(network === "") { alert("Veuillez choisir un opérateur de retrait"); return; }
+            // Calculer le solde disponible pour retrait
+            const currentWithdrawBalance = calculateWithdrawBalance();
+
+            if(!phone || phone.length < 8) { alert("Numéro invalide"); return; }
+            if(network === "") { alert("Choisissez un opérateur"); return; }
+            if(!amount || amount < 1000) { alert("Min 1000 FCFA"); return; }
             
-            const res = await fetch(`${API_URL}/withdraw`, { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, 
-                body: JSON.stringify({ amount, network, phone }) 
-            });
+            // VÉRIFICATION CRUCIALE
+            if (amount > currentWithdrawBalance) {
+                alert(`❌ Solde insuffisant dans la case RETRAITE.\n\nVous avez : ${currentWithdrawBalance} FCFA disponibles.\nVous demandez : ${amount} FCFA.\n\nVeuillez attendre que vos produits génèrent assez de gains ou se terminent.`);
+                return;
+            }
+            
+            const res = await fetch(`${API_URL}/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone }) });
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
-            if(data.success) { userData.balance -= amount; localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); }
+            if(data.success) { 
+                // Mise à jour locale immédiate
+                userData.balance -= amount; 
+                localStorage.setItem('userData', JSON.stringify(userData)); 
+                loadDashboard(); // Recalcule les soldes
+            }
         }
 
         async function loadAdminData() {
@@ -483,4 +397,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-                            </html>
+                                                         </html>
