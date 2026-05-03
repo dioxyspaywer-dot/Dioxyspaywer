@@ -120,17 +120,40 @@
 
         <!-- 2. PRODUITS (ACHATS) -->
         <div id="section-products" class="hidden">
-            <h3>🛒 Boutique d'Investissement</h3>
+            <h3> Boutique d'Investissement</h3>
             <div class="card" id="lt-card-shop">
                 <h4> Produit Long Terme (Obligatoire)</h4>
                 <p>2000 FCFA → 700 FCFA/jour (55 jours)</p>
                 <button id="btn-buy-lt-shop" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
                 <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center;">✅ Déjà acheté</p>
             </div>
+            
             <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
-            <div class="card"><p><strong>Produit 1:</strong> 2000 → 1000 FCFA/jour (5 jours)</p><button onclick="invest('prod1', 2000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 2:</strong> 3000 → 1500 FCFA/jour (5 jours)</p><button onclick="invest('prod2', 3000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 3:</strong> 10000 → 5000 FCFA/jour (5 jours)</p><button onclick="invest('prod3', 10000)">Investir</button></div>
+            <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Durée 5 jours)</p>
+
+            <div class="card">
+                <p><strong>Produit 1:</strong> 2000 FCFA → <span style="color:#00e676">1000 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 5000 FCFA</small>
+                <button onclick="invest('prod1', 2000)">Investir</button>
+            </div>
+
+            <div class="card">
+                <p><strong>Produit 2:</strong> 3000 FCFA → <span style="color:#00e676">1500 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 7500 FCFA</small>
+                <button onclick="invest('prod2', 3000)">Investir</button>
+            </div>
+
+            <div class="card">
+                <p><strong>Produit 3:</strong> 5000 FCFA → <span style="color:#00e676">2000 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 10000 FCFA</small>
+                <button onclick="invest('prod3', 5000)">Investir</button>
+            </div>
+
+            <div class="card">
+                <p><strong>Produit 4:</strong> 10000 FCFA → <span style="color:#00e676">5000 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 25000 FCFA</small>
+                <button onclick="invest('prod4', 10000)">Investir</button>
+            </div>
         </div>
 
         <!-- 3. MES PRODUITS -->
@@ -168,9 +191,9 @@
                 <input type="number" id="dep-amount" placeholder="Montant dépôt (Min 2000)">
                 <select id="dep-network">
                     <option value="" disabled selected>Opérateur</option>
-                    <optgroup label="🇹 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
+                    <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
                     <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
-                    <optgroup label="🇧🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
+                    <optgroup label="🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button class="secondary" onclick="deposit()">Déposer</button>
             </div>
@@ -182,19 +205,17 @@
                     <option value="" disabled selected>Opérateur</option>
                     <optgroup label="🇹 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
                     <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
-                    <optgroup label="🇧🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
+                    <optgroup label="🇧 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button onclick="withdraw()">Retirer</button>
             </div>
         </div>
 
-        <!-- 6. HISTORIQUE (NOUVEAU) -->
+        <!-- 6. HISTORIQUE -->
         <div id="section-history" class="hidden">
-            <h3>📜 Historique des Transactions</h3>
+            <h3> Historique des Transactions</h3>
             <p style="font-size:0.8rem; color:#ccc;">Dépôts, Retraits, Investissements et Gains.</p>
-            <div id="history-list" style="margin-top: 15px;">
-                <!-- Liste générée par JS -->
-            </div>
+            <div id="history-list" style="margin-top: 15px;"></div>
         </div>
 
         <!-- ADMIN -->
@@ -210,7 +231,7 @@
         <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon">🏠</span><span>Tableau<br>de bord</span></div>
         <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon">🛒</span><span>Produits</span></div>
         <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon">📦</span><span>Mes<br>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon">👤</span><span>Compte</span></div>
+        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon"></span><span>Compte</span></div>
         <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Caisse</span></div>
         <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>Historique</span></div>
     </div>
@@ -272,6 +293,7 @@
                 userData.shortTermProducts.forEach(prod => {
                     const unlockDate = new Date(prod.unlockDate);
                     if (unlockDate <= now) {
+                        // Produit fini : Capital + Gains totaux (5 jours * gain journalier)
                         const totalGains = prod.dailyGain * 5; 
                         withdrawableAmount += (prod.amount + totalGains);
                     }
@@ -307,33 +329,28 @@
                     if(prod.type === 'prod1') name = "Produit 1";
                     if(prod.type === 'prod2') name = "Produit 2";
                     if(prod.type === 'prod3') name = "Produit 3";
+                    if(prod.type === 'prod4') name = "Produit 4";
+                    
                     container.innerHTML += `<div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}"><h4>${name}</h4><p>Gain/jour: ${prod.dailyGain} FCFA</p><div class="product-status">${isFinished?'✅ Terminé':' '+daysLeft+' jours restants'}</div></div>`;
                 });
             }
             if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
         }
 
-        // --- FONCTION POUR AFFICHER L'HISTORIQUE ---
         function renderHistory() {
             const container = document.getElementById('history-list');
             container.innerHTML = '';
-            
             if (!userData.transactions || userData.transactions.length === 0) {
                 container.innerHTML = '<p style="color:#aaa; text-align:center; margin-top:20px;">Aucune transaction pour le moment.</p>';
                 return;
             }
-
-            // Trier par date décroissante (plus récent en premier)
             const sortedTransactions = userData.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-
             sortedTransactions.forEach(tx => {
                 const dateObj = new Date(tx.date);
                 const dateStr = dateObj.toLocaleDateString('fr-FR') + ' ' + dateObj.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
-                
                 let typeLabel = tx.type;
                 let amountClass = 'text-white';
                 let sign = '';
-
                 if (tx.type === 'DEPOSIT' || tx.type === 'GAIN' || tx.type === 'REFERRAL_BONUS') {
                     amountClass = 'text-green';
                     sign = '+';
@@ -341,8 +358,6 @@
                     amountClass = 'text-red';
                     sign = '-';
                 }
-
-                // Traduction des types
                 if(tx.type === 'DEPOSIT') typeLabel = 'Dépôt';
                 if(tx.type === 'WITHDRAWAL') typeLabel = 'Retrait';
                 if(tx.type === 'INVESTMENT') typeLabel = 'Investissement';
@@ -384,7 +399,7 @@
             if (userData.hasLongTerm) { document.getElementById('btn-buy-lt-shop').style.display = 'none'; document.getElementById('lt-status-shop').style.display = 'block'; }
             
             renderMyProducts();
-            renderHistory(); // Charger l'historique
+            renderHistory();
             
             if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
         }
@@ -395,12 +410,7 @@
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
             if(data.success) { 
-                // Recharger les données depuis le serveur pour avoir l'historique à jour
-                const loginRes = await fetch(`${API_URL}/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: userData.phone, password: 'dummy' }) }); 
-                // Note: Pour simplifier, on fait un faux login ou on met à jour manuellement. 
-                // La meilleure méthode est de recharger la page ou de refaire un vrai login si le token est toujours bon.
-                // Ici, on va juste recharger la page pour être sûr que tout est synchronisé.
-                location.reload();
+                location.reload(); // Rechargement pour synchroniser les données
             }
         }
 
@@ -457,4 +467,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-                                              </html>
+                                             </html>
