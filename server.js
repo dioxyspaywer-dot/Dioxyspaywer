@@ -66,7 +66,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// --- CONNEXION AVEC HISTORIQUE ---
+// --- CONNEXION AVEC HISTORIQUE ET SOLDES ---
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     const { phone, password } = req.body;
@@ -103,7 +103,6 @@ app.post('/api/login', async (req, res) => {
         else if (daysPassed > 0) withdrawBalance += (700 * daysPassed);
     }
 
-    // Récupération de l'historique des transactions (limité aux 50 dernières pour la performance)
     const transactions = await Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50);
 
     res.json({ 
@@ -120,16 +119,18 @@ app.post('/api/login', async (req, res) => {
         referralCode: user.referralCode, 
         referralCount: user.referralCount, 
         referralEarnings: user.referralEarnings,
-        transactions: transactions // Envoi de l'historique
+        transactions: transactions
     });
 });
 
 app.get('/api/status', (req, res) => res.json({ active: isSiteActive }));
 
+// --- GAINS AUTOMATIQUES ---
 cron.schedule('0 8 * * 1-5', async () => {
     if (!isSiteActive) return;
     const users = await User.find({ $or: [{ hasLongTerm: true }, { 'shortTermProducts.0': { $exists: true } }] });
     const now = new Date();
+
     for (let user of users) {
         let totalDailyGain = 0;
         if (user.hasLongTerm) {
@@ -152,32 +153,56 @@ cron.schedule('0 8 * * 1-5', async () => {
     }
 });
 
+// --- INVESTISSEMENT (MIS À JOUR POUR 4 PRODUITS) ---
 app.post('/api/invest', authMiddleware, async (req, res) => {
     const { productType, amount } = req.body;
     const user = req.user;
+    
     if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
     if (productType !== 'longterm' && !user.hasLongTerm) return res.status(403).json({ error: 'Produit Long Terme obligatoire.' });
+
     const currentMonth = new Date().toISOString().slice(0, 7);
     if (user.lastPurchaseMonth !== currentMonth) { user.monthlyPurchasesCount = 0; user.lastPurchaseMonth = currentMonth; }
+
     if (productType !== 'longterm') {
         if (user.monthlyPurchasesCount >= 2) return res.status(403).json({ error: 'Limite 2 achats/mois atteinte.' });
     }
+
     user.balance -= amount;
+    
     if (productType === 'longterm') {
         if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
         user.hasLongTerm = true; 
         user.longTermStartDate = new Date();
     } else {
         let dailyGain = 0;
-        if (productType === 'prod1') dailyGain = 1000;
-        if (productType === 'prod2') dailyGain = 1500;
-        if (productType === 'prod3') dailyGain = 5000;
-        const unlockDate = new Date(); unlockDate.setDate(unlockDate.getDate() + 5);
+        
+        if (productType === 'prod1') {
+            if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
+            dailyGain = 1000;
+        } else if (productType === 'prod2') {
+            if (amount !== 3000) return res.status(400).json({ error: 'Prix incorrect.' });
+            dailyGain = 1500;
+        } else if (productType === 'prod3') {
+            if (amount !== 5000) return res.status(400).json({ error: 'Prix incorrect.' });
+            dailyGain = 2000; // Nouveau Produit 3
+        } else if (productType === 'prod4') {
+            if (amount !== 10000) return res.status(400).json({ error: 'Prix incorrect.' });
+            dailyGain = 5000; // Nouveau Produit 4
+        } else {
+            return res.status(400).json({ error: 'Produit inconnu.' });
+        }
+        
+        const unlockDate = new Date(); 
+        unlockDate.setDate(unlockDate.getDate() + 5);
+        
         user.shortTermProducts.push({ type: productType, amount, dailyGain, startDate: new Date(), unlockDate });
         user.monthlyPurchasesCount += 1;
     }
+    
     await user.save();
     await Transaction.create({ userId: user._id, type: 'INVESTMENT', amount, status: 'SUCCESS', reference: `INV_${Date.now()}` });
+    
     res.json({ success: true, newBalance: user.balance, remainingPurchases: 2 - user.monthlyPurchasesCount });
 });
 
