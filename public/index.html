@@ -405,13 +405,39 @@
         }
 
         async function invest(type, amount) {
-            const res = await fetch(`${API_URL}/invest`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ productType: type, amount }) });
-            const data = await res.json();
-            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
-            alert(data.message || data.error);
-            if(data.success) { 
-                location.reload(); // Rechargement pour synchroniser les données
-            }
+    // Vérification locale rapide avant d'envoyer au serveur
+    if (userData.balance < amount) {
+        alert(`❌ Solde insuffisant !\nVous avez : ${userData.balance} FCFA\nIl faut : ${amount} FCFA\n\nVeuillez déposer plus d'argent.`);
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_URL}/invest`, { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, 
+            body: JSON.stringify({ productType: type, amount }) 
+        });
+        
+        const data = await res.json();
+        
+        if (data.error === 'SITE_CLOSED') { 
+            showClosedScreen(); 
+            return; 
+        }
+        
+        if (!data.success) {
+            // Affiche l'erreur précise venant du serveur
+            alert("⚠️ Échec de l'investissement :\n" + (data.error || "Erreur inconnue"));
+            return;
+        }
+
+        alert("✅ Investissement réussi ! La page va se recharger.");
+        location.reload(); // Recharge immédiate pour mettre à jour le solde
+        
+    } catch (error) {
+        console.error("Erreur réseau:", error);
+        alert("❌ Problème de connexion au serveur. Vérifiez votre internet.");
+    }
         }
 
         async function deposit() {
