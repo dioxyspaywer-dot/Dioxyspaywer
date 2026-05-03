@@ -14,7 +14,6 @@
         .hidden { display: none !important; }
         .card { background: rgba(0,0,0,0.2); padding: 15px; margin-bottom: 15px; border-radius: 10px; border-left: 4px solid #ffd700; text-align: left; }
         h1, h2, h3, h4 { text-align: center; color: #ffd700; margin-top: 0; }
-        .balance { font-size: 2rem; color: #00e676; text-align: center; font-weight: bold; }
         
         .compact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .compact-card { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 10px; margin-bottom: 0; text-align: center; }
@@ -28,7 +27,7 @@
             align-items: center; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
             z-index: 9999; border-top: 1px solid #333;
         }
-        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 0.65rem; cursor: pointer; text-decoration: none; transition: color 0.3s; flex: 1; }
+        .nav-btn { display: flex; flex-direction: column; align-items: center; color: #888; font-size: 0.6rem; cursor: pointer; text-decoration: none; transition: color 0.3s; flex: 1; }
         .nav-btn.active { color: #ffd700; font-weight: bold; }
         .nav-icon { font-size: 1.2rem; margin-bottom: 3px; }
         
@@ -38,6 +37,31 @@
         select option { background: #0f2027; color: white; }
         .product-status { font-size: 0.8rem; color: #aaa; margin-top: 5px; }
         .active-product { border-left-color: #00e676 !important; }
+
+        /* Styles pour l'historique */
+        .history-item {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            border-left: 3px solid #888;
+        }
+        .history-item.DEPOSIT { border-left-color: #4CAF50; }
+        .history-item.WITHDRAWAL { border-left-color: #FF9800; }
+        .history-item.INVESTMENT { border-left-color: #2196F3; }
+        .history-item.GAIN { border-left-color: #00E676; }
+        .history-item.REFERRAL_BONUS { border-left-color: #9C27B0; }
+        
+        .history-info { text-align: left; }
+        .history-type { font-weight: bold; display: block; font-size: 0.85rem; }
+        .history-date { font-size: 0.75rem; color: #aaa; }
+        .history-amount { font-weight: bold; }
+        .text-green { color: #00E676; }
+        .text-red { color: #FF5252; }
     </style>
 </head>
 <body>
@@ -73,56 +97,49 @@
 
     <div class="container hidden" id="main-content">
         
+        <!-- 1. TABLEAU DE BORD -->
         <div id="section-dashboard">
             <div style="display:flex; justify-content:space-between; align-items: center; margin-bottom: 20px;">
                 <h3 id="user-welcome" style="margin:0;">Bonjour</h3>
                 <button onclick="logout()" style="width:auto; padding:5px 10px; background:red; color:white; font-size: 0.8rem; margin:0;">Déconnexion</button>
             </div>
-
             <div class="compact-grid">
                 <div class="compact-card" style="border-left: 4px solid #4CAF50;">
                     <h4 class="compact-title"> DÉPÔT</h4>
-                    <p class="compact-sub">Pour les achats et les bonus</p>
-                    <div class="compact-balance" style="color: #4CAF50;">
-                        <span id="deposit-balance">0</span> FCFA
-                    </div>
+                    <p class="compact-sub">Pour achats & bonus</p>
+                    <div class="compact-balance" style="color: #4CAF50;"><span id="deposit-balance">0</span> FCFA</div>
                 </div>
                 <div class="compact-card" style="border-left: 4px solid #FF9800;">
                     <h4 class="compact-title"> RETRAITE</h4>
                     <p class="compact-sub">Gains disponibles</p>
-                    <div class="compact-balance" style="color: #FF9800;">
-                        <span id="withdraw-balance">0</span> FCFA
-                    </div>
+                    <div class="compact-balance" style="color: #FF9800;"><span id="withdraw-balance">0</span> FCFA</div>
                 </div>
             </div>
             <p style="text-align: center; color: #aaa; font-size: 0.9rem;">Bienvenue sur votre tableau de bord.</p>
         </div>
 
+        <!-- 2. PRODUITS (ACHATS) -->
         <div id="section-products" class="hidden">
             <h3>🛒 Boutique d'Investissement</h3>
-            <p style="font-size:0.8rem; color:#ccc;">Achetez ici vos nouveaux produits.</p>
-            
             <div class="card" id="lt-card-shop">
                 <h4> Produit Long Terme (Obligatoire)</h4>
                 <p>2000 FCFA → 700 FCFA/jour (55 jours)</p>
                 <button id="btn-buy-lt-shop" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
                 <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center;">✅ Déjà acheté</p>
             </div>
-
             <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
-            <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois)</p>
-            
-            <div class="card"><p><strong>Produit 1:</strong> 2000 FCFA → 1000 FCFA/j</p><button onclick="invest('prod1', 2000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 2:</strong> 3000 FCFA → 1500 FCFA/j</p><button onclick="invest('prod2', 3000)">Investir</button></div>
-            <div class="card"><p><strong>Produit 3:</strong> 10000 FCFA → 5000 FCFA/j</p><button onclick="invest('prod3', 10000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 1:</strong> 2000 → 1000 FCFA/j</p><button onclick="invest('prod1', 2000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 2:</strong> 3000 → 1500 FCFA/j</p><button onclick="invest('prod2', 3000)">Investir</button></div>
+            <div class="card"><p><strong>Produit 3:</strong> 10000 → 5000 FCFA/j</p><button onclick="invest('prod3', 10000)">Investir</button></div>
         </div>
 
+        <!-- 3. MES PRODUITS -->
         <div id="section-myproducts" class="hidden">
             <h3> Mes Produits Actifs</h3>
-            <p style="font-size:0.8rem; color:#ccc;">Suivez vos investissements en cours.</p>
             <div id="my-products-list"></div>
         </div>
 
+        <!-- 4. COMPTE -->
         <div id="section-account" class="hidden">
             <h3> Mon Compte</h3>
             <div class="card">
@@ -139,20 +156,20 @@
                 <hr style="border-color:rgba(255,255,255,0.1); margin: 15px 0;">
                 <p>Personnes parrainées : <strong id="acc-ref-count" style="color:#00bcd4">0</strong></p>
                 <p>Gains via parrainage : <strong id="acc-ref-earnings" style="color:#00e676">0</strong> FCFA</p>
-                <small style="color:#aaa;">Bonus : 350 FCFA par inscription.</small>
             </div>
         </div>
 
+        <!-- 5. TRANSACTIONS (CAISSE) -->
         <div id="section-transactions" class="hidden">
-            <h3>💳 Caisse (Lun-Ven, 08h-21h)</h3>
+            <h3> Caisse (Lun-Ven, 08h-21h)</h3>
             <div class="card">
                 <h4 style="color:#4CAF50">Dépôt</h4>
                 <input type="tel" id="dep-phone" placeholder="Votre numéro mobile" value="">
                 <input type="number" id="dep-amount" placeholder="Montant dépôt (Min 2000)">
                 <select id="dep-network">
-                    <option value="" disabled selected>Choisir l'opérateur</option>
-                    <optgroup label="🇬 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
-                    <optgroup label="🇨 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option><option value="ORANGE_CI">Orange CI</option></optgroup>
+                    <option value="" disabled selected>Opérateur</option>
+                    <optgroup label="🇹 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
+                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
                     <optgroup label="🇧🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button class="secondary" onclick="deposit()">Déposer</button>
@@ -162,15 +179,25 @@
                 <input type="tel" id="wit-phone" placeholder="Votre numéro mobile" value="">
                 <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
                 <select id="wit-network">
-                    <option value="" disabled selected>Choisir l'opérateur</option>
-                    <optgroup label="🇬 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
-                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option><option value="ORANGE_CI">Orange CI</option></optgroup>
-                    <optgroup label="🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
+                    <option value="" disabled selected>Opérateur</option>
+                    <optgroup label="🇹 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
+                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
+                    <optgroup label="🇧🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button onclick="withdraw()">Retirer</button>
             </div>
         </div>
 
+        <!-- 6. HISTORIQUE (NOUVEAU) -->
+        <div id="section-history" class="hidden">
+            <h3>📜 Historique des Transactions</h3>
+            <p style="font-size:0.8rem; color:#ccc;">Dépôts, Retraits, Investissements et Gains.</p>
+            <div id="history-list" style="margin-top: 15px;">
+                <!-- Liste générée par JS -->
+            </div>
+        </div>
+
+        <!-- ADMIN -->
         <div id="admin-section">
             <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
             <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
@@ -178,12 +205,14 @@
         </div>
     </div>
 
+    <!-- BARRE DE NAVIGATION (6 OPTIONS) -->
     <div class="bottom-nav">
         <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon"></span><span>Tableau<br>de bord</span></div>
         <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon">🛒</span><span>Produits</span></div>
         <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon">📦</span><span>Mes<br>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon"></span><span>Compte</span></div>
-        <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Transactions</span></div>
+        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon">👤</span><span>Compte</span></div>
+        <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Caisse</span></div>
+        <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>Historique</span></div>
     </div>
 
     <script>
@@ -192,10 +221,10 @@
         let userData = JSON.parse(localStorage.getItem('userData'));
 
         function switchTab(tabName) {
-            ['dashboard','products','myproducts','account','transactions'].forEach(t => document.getElementById('section-'+t).classList.add('hidden'));
+            ['dashboard','products','myproducts','account','transactions','history'].forEach(t => document.getElementById('section-'+t).classList.add('hidden'));
             document.getElementById('section-'+tabName).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            const index = ['dashboard','products','myproducts','account','transactions'].indexOf(tabName);
+            const index = ['dashboard','products','myproducts','account','transactions','history'].indexOf(tabName);
             if(index >= 0) document.querySelectorAll('.nav-btn')[index].classList.add('active');
         }
 
@@ -224,41 +253,35 @@
             const res = await fetch(`${API_URL}/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: document.getElementById('login-phone').value, password: document.getElementById('login-pass').value }) });
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
-            if (data.token) { token = data.token; userData = data; localStorage.setItem('token', token); localStorage.setItem('userData', JSON.stringify(userData)); loadDashboard(); } else { alert(data.error); }
+            if (data.token) { 
+                token = data.token; 
+                userData = data; 
+                localStorage.setItem('token', token); 
+                localStorage.setItem('userData', JSON.stringify(userData)); 
+                loadDashboard(); 
+            } else { alert(data.error); }
         }
 
         function logout() { localStorage.clear(); location.reload(); }
         function copyReferralCode() { navigator.clipboard.writeText(document.getElementById('my-referral-code').innerText).then(() => alert('Copié !')); }
 
-        // --- NOUVELLE FONCTION DE CALCUL DU SOLDE RETRAIT ---
         function calculateWithdrawBalance() {
             let withdrawableAmount = 0;
             const now = new Date();
-            
-            // 1. Produits courts termes terminés
             if (userData.shortTermProducts && userData.shortTermProducts.length > 0) {
                 userData.shortTermProducts.forEach(prod => {
                     const unlockDate = new Date(prod.unlockDate);
                     if (unlockDate <= now) {
-                        // Produit fini : Capital + Gains totaux (5 jours * gain journalier)
                         const totalGains = prod.dailyGain * 5; 
                         withdrawableAmount += (prod.amount + totalGains);
                     }
                 });
             }
-            
-            // 2. Produit Long Terme
             if (userData.hasLongTerm && userData.longTermStartDate) {
                 const startDate = new Date(userData.longTermStartDate);
                 const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-                
-                if (daysPassed >= 55) {
-                    // Terminé : Tous les gains (55 * 700)
-                    withdrawableAmount += (700 * 55);
-                } else if (daysPassed > 0) {
-                    // En cours : Gains générés jusqu'à aujourd'hui
-                    withdrawableAmount += (700 * daysPassed);
-                }
+                if (daysPassed >= 55) withdrawableAmount += (700 * 55);
+                else if (daysPassed > 0) withdrawableAmount += (700 * daysPassed);
             }
             return withdrawableAmount;
         }
@@ -268,14 +291,12 @@
             container.innerHTML = '';
             let hasProducts = false;
             const now = new Date();
-
             if (userData.hasLongTerm) {
                 hasProducts = true;
                 const daysPassed = Math.floor((now - new Date(userData.longTermStartDate)) / (1000 * 60 * 60 * 24));
                 const daysLeft = Math.max(0, 55 - daysPassed);
                 container.innerHTML += `<div class="card active-product"><h4>⭐ Long Terme</h4><p>Gain/jour: 700 FCFA</p><div class="product-status"> ${daysLeft} jours restants</div></div>`;
             }
-
             if (userData.shortTermProducts) {
                 userData.shortTermProducts.forEach(prod => {
                     hasProducts = true;
@@ -286,11 +307,60 @@
                     if(prod.type === 'prod1') name = "Produit 1";
                     if(prod.type === 'prod2') name = "Produit 2";
                     if(prod.type === 'prod3') name = "Produit 3";
-                    
-                    container.innerHTML += `<div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}"><h4>${name}</h4><p>Gain/jour: ${prod.dailyGain} FCFA</p><div class="product-status">${isFinished?'✅ Terminé (Gains dispo)':' '+daysLeft+' jours restants'}</div></div>`;
+                    container.innerHTML += `<div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}"><h4>${name}</h4><p>Gain/jour: ${prod.dailyGain} FCFA</p><div class="product-status">${isFinished?'✅ Terminé':' '+daysLeft+' jours restants'}</div></div>`;
                 });
             }
             if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
+        }
+
+        // --- FONCTION POUR AFFICHER L'HISTORIQUE ---
+        function renderHistory() {
+            const container = document.getElementById('history-list');
+            container.innerHTML = '';
+            
+            if (!userData.transactions || userData.transactions.length === 0) {
+                container.innerHTML = '<p style="color:#aaa; text-align:center; margin-top:20px;">Aucune transaction pour le moment.</p>';
+                return;
+            }
+
+            // Trier par date décroissante (plus récent en premier)
+            const sortedTransactions = userData.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedTransactions.forEach(tx => {
+                const dateObj = new Date(tx.date);
+                const dateStr = dateObj.toLocaleDateString('fr-FR') + ' ' + dateObj.toLocaleTimeString('fr-FR', {hour: '2-digit', minute:'2-digit'});
+                
+                let typeLabel = tx.type;
+                let amountClass = 'text-white';
+                let sign = '';
+
+                if (tx.type === 'DEPOSIT' || tx.type === 'GAIN' || tx.type === 'REFERRAL_BONUS') {
+                    amountClass = 'text-green';
+                    sign = '+';
+                } else if (tx.type === 'WITHDRAWAL' || tx.type === 'INVESTMENT') {
+                    amountClass = 'text-red';
+                    sign = '-';
+                }
+
+                // Traduction des types
+                if(tx.type === 'DEPOSIT') typeLabel = 'Dépôt';
+                if(tx.type === 'WITHDRAWAL') typeLabel = 'Retrait';
+                if(tx.type === 'INVESTMENT') typeLabel = 'Investissement';
+                if(tx.type === 'GAIN') typeLabel = 'Gain Quotidien';
+                if(tx.type === 'REFERRAL_BONUS') typeLabel = 'Bonus Parrainage';
+
+                const html = `
+                    <div class="history-item ${tx.type}">
+                        <div class="history-info">
+                            <span class="history-type">${typeLabel}</span>
+                            <span class="history-date">${dateStr}</span>
+                            ${tx.method ? `<span class="history-date" style="color:#666">${tx.method}</span>` : ''}
+                        </div>
+                        <div class="history-amount ${amountClass}">${sign}${tx.amount} FCFA</div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
         }
 
         function loadDashboard() {
@@ -304,9 +374,8 @@
             document.getElementById('acc-ref-count').innerText = userData.referralCount || 0;
             document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
             
-            // Calcul des soldes
             const depositBal = userData.balance || 0;
-            const withdrawBal = calculateWithdrawBalance(); // Utilisation de la nouvelle fonction
+            const withdrawBal = calculateWithdrawBalance();
             
             document.getElementById('deposit-balance').innerText = depositBal;
             document.getElementById('withdraw-balance').innerText = withdrawBal;
@@ -315,6 +384,8 @@
             if (userData.hasLongTerm) { document.getElementById('btn-buy-lt-shop').style.display = 'none'; document.getElementById('lt-status-shop').style.display = 'block'; }
             
             renderMyProducts();
+            renderHistory(); // Charger l'historique
+            
             if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
         }
 
@@ -324,14 +395,12 @@
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
             if(data.success) { 
-                userData.balance = data.newBalance; 
-                if(type === 'longterm') userData.hasLongTerm = true; 
-                if (type !== 'longterm') {
-                    if(!userData.shortTermProducts) userData.shortTermProducts = [];
-                    userData.shortTermProducts.push({type: type, amount: amount, dailyGain: type==='prod1'?1000:type==='prod2'?1500:5000, unlockDate: new Date(Date.now() + 5*24*60*60*1000)});
-                }
-                localStorage.setItem('userData', JSON.stringify(userData)); 
-                loadDashboard(); 
+                // Recharger les données depuis le serveur pour avoir l'historique à jour
+                const loginRes = await fetch(`${API_URL}/login`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ phone: userData.phone, password: 'dummy' }) }); 
+                // Note: Pour simplifier, on fait un faux login ou on met à jour manuellement. 
+                // La meilleure méthode est de recharger la page ou de refaire un vrai login si le token est toujours bon.
+                // Ici, on va juste recharger la page pour être sûr que tout est synchronisé.
+                location.reload();
             }
         }
 
@@ -348,22 +417,18 @@
             if (data.success && data.paymentUrl) { window.location.href = data.paymentUrl; } else { alert(data.message || data.error); }
         }
 
-        // --- FONCTION RETRAIT MODIFIÉE AVEC VÉRIFICATION DU SOLDE ---
         async function withdraw() {
             const phone = document.getElementById('wit-phone').value;
             const amount = parseFloat(document.getElementById('wit-amount').value);
             const network = document.getElementById('wit-network').value;
-            
-            // Calculer le solde disponible pour retrait
             const currentWithdrawBalance = calculateWithdrawBalance();
 
             if(!phone || phone.length < 8) { alert("Numéro invalide"); return; }
             if(network === "") { alert("Choisissez un opérateur"); return; }
             if(!amount || amount < 1000) { alert("Min 1000 FCFA"); return; }
             
-            // VÉRIFICATION CRUCIALE
             if (amount > currentWithdrawBalance) {
-                alert(`❌ Solde insuffisant dans la case RETRAITE.\n\nVous avez : ${currentWithdrawBalance} FCFA disponibles.\nVous demandez : ${amount} FCFA.\n\nVeuillez attendre que vos produits génèrent assez de gains ou se terminent.`);
+                alert(`Solde insuffisant dans RETRAITE. Disponible: ${currentWithdrawBalance} FCFA`);
                 return;
             }
             
@@ -371,12 +436,7 @@
             const data = await res.json();
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
-            if(data.success) { 
-                // Mise à jour locale immédiate
-                userData.balance -= amount; 
-                localStorage.setItem('userData', JSON.stringify(userData)); 
-                loadDashboard(); // Recalcule les soldes
-            }
+            if(data.success) { location.reload(); }
         }
 
         async function loadAdminData() {
@@ -397,4 +457,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-                </html>
+                                              </html>
