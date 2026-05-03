@@ -130,8 +130,7 @@ app.post('/api/login', async (req, res) => {
             // Terminé : Tous les gains (55 * 700)
             withdrawBalance += (700 * 55);
         } else if (daysPassed > 0) {
-            // En cours : Gains générés jusqu'à aujourd'hui (disponibles au retrait partiel si voulu, ou total à la fin)
-            // Ici on considère que les gains journaliers s'accumulent dans le solde de retrait
+            // En cours : Gains générés jusqu'à aujourd'hui
             withdrawBalance += (700 * daysPassed);
         }
     }
@@ -156,8 +155,260 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/status', (req, res) => res.json({ active: isSiteActive }));
 
+// --- HISTORIQUE DES TRANSACTIONS (NOUVEAU) ---
+app.get('/api/transactions', authMiddleware, async (req, res) => {
+    try {
+        const transactions = await Transaction.find({ userId: req.user._id })
+            .sort({ date: -1 }) // Du plus récent au plus ancien
+            .limit(50); // Limite aux 50 dernières
+        
+        res.json({ success: true, transactions });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erreur lors du chargement de l\'historique.' });
+    }
+});
+
 // --- GAINS AUTOMATIQUES (Lun-Ven 8h) ---
-// Cette fonction crédite les gains quotidiens dans le solde global (dépôt)
+cron.schedule('0 8 * * 1-5', async () => {
+    if (!isSiteActive) return;
+    const users = await User.find({ $or: [{ hasLongTerm: true }, { 'shortTermProducts.0': { $exists: true } }] });
+    const now = new Date();
+
+    for (let user of users) {
+        let totalDailyGain = 0;
+        
+        // Calcul gain Long Terme
+        if (user.hasLongTerm) {
+            const daysPassed = Math.floor((now - user.longTermStartDate) / (1000 * 60 * 60 * 24));
+            if (daysPassed < 55) totalDailyGain += 700;
+        }
+
+        // Calcul gain Courts Termes et nettoyage des produits expirés
+        const activeShortTerms = [];
+        for (let prod of user.shortTermProducts) {
+            if (prod.unlockDate > now) {
+                // Produit encore actif
+                totalDailyGain += prod.dailyGain;
+                activeShortTerms.push(prod);
+            }
+            // Si produit expiré, il n'est plus ajouté à la liste active, mais son capital+gains sont déjà comptabilisés dans le calcul de withdrawBalance
+        }
+        user.shortTermProducts = activeShortTerms;
+
+        if (totalDailyGain > 0) {
+            user.balance += totalDailyGain;
+            await user.save();
+            await Transaction.create({ userId: user._id, type: 'GAIN', amount: totalDailyGain, status: 'SUCCESS', reference: `GAIN_${Date.now()}` });
+        }
+    }
+});
+
+// --- INVESTISSEMENT ---
+app.post('/api/invest', authMiddleware, async (req, res) => {
+    const { productType, amount } = req.body;
+    const user = req.user;
+    
+    // Vérification du solde DÉPÔT
+    if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
+    
+    if (productType !== 'longterm' && !user.hasLongTerm) return res.status(403).json({ error: 'Produit Long Terme obligatoire.' });
+
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (user.lastPurchaseMonth !== currentMonth) { user.monthlyPurchasesCount = 0; user.lastPurchaseMonth = currentMonth; }
+
+    if (productType !== 'longterm') {
+        if (user.monthlyPurchasesCount >= 2) return res.status(403).json({ error: 'Limite 2 achats/mois atteinte.' });
+    }
+
+    user.balance -= amount; // Déduit du solde DÉPÔT
+    
+    if (productType === 'longterm') {
+        if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
+        user.hasLongTerm = true; 
+        user.longTermStartDate = new Date();
+    } elseVoici le code **complet et à jour** du fichier **`server.js`**.
+
+Il intègre toutes les modifications récentes :
+1.  ✅ **Calcul du solde de retrait** (basé sur les produits terminés) dans la connexion (`/api/login`) et le retrait (`/api/withdraw`).
+2.  ✅ **Nouvelle route `/api/transactions`** pour afficher l'historique complet des opérations de l'utilisateur.
+3.  ✅ Logique de parrainage, investissements, dépôts PayDunya et administration.
+
+Copiez **tout** ce code et remplacez l'intégralité de votre fichier `server.js` sur GitHub :
+
+```javascript
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const cron = require('node-cron');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const axios = require('axios');
+const path = require('path');
+
+const User = require('./models/User');
+const Transaction = require('./models/Transaction');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+let isSiteActive = true;
+
+// Connexion à MongoDB
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('✅ Base de données connectée'))
+    .catch(err => console.error('❌ Erreur DB:', err));
+
+// --- MIDDLEWARE AUTHENTIFICATION ---
+const authMiddleware = async (req, res, next) => {
+    if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: 'Accès refusé' });
+    
+    try {
+        const decoded = jwt.verify(token.split(' ')[1], process.env.JWT_SECRET);
+        req.user = await User.findById(decoded.id);
+        if (!req.user.isActive && req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
+            return res.status(403).json({ error: 'Compte désactivé.' });
+        }
+        next();
+    } catch (e) {
+        res.status(401).json({ error: 'Token invalide' });
+    }
+};
+
+// --- INSCRIPTION AVEC PARRAINAGE ---
+app.post('/api/register', async (req, res) => {
+    if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    
+    const { fullName, phone, country, password, referralCode } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    let role = 'user';
+    if (phone === process.env.CREATOR_WALLET_PHONE) role = 'admin';
+
+    let referredByUserId = null;
+
+    // Logique de Parrainage
+    if (referralCode && referralCode.trim() !== '') {
+        const sponsor = await User.findOne({ referralCode: referralCode.trim() });
+        if (sponsor) {
+            referredByUserId = sponsor._id;
+            
+            // BONUS DE 350 FCFA AU PARRAIN
+            sponsor.balance += 350; 
+            sponsor.referralCount += 1;
+            sponsor.referralEarnings += 350;
+            await sponsor.save();
+
+            await Transaction.create({
+                userId: sponsor._id,
+                type: 'REFERRAL_BONUS',
+                amount: 350,
+                method: 'Parrainage',
+                status: 'SUCCESS',
+                reference: `REF_${Date.now()}`
+            });
+        }
+    }
+
+    try {
+        await User.create({ 
+            fullName, phone, country, password: hashedPassword, role, referredBy: referredByUserId 
+        });
+        res.json({ success: true, message: 'Inscription réussie' });
+    } catch (e) {
+        res.status(400).json({ error: 'Numéro déjà utilisé' });
+    }
+});
+
+// --- CONNEXION (AVEC CALCUL DU SOLDE RETRAIT) ---
+app.post('/api/login', async (req, res) => {
+    if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    const { phone, password } = req.body;
+    const user = await User.findOne({ phone });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res.status(400).json({ error: 'Identifiants incorrects' });
+    }
+
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (user.lastPurchaseMonth !== currentMonth) {
+        user.monthlyPurchasesCount = 0;
+        user.lastPurchaseMonth = currentMonth;
+        await user.save();
+    }
+
+    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
+    
+    // --- CALCUL DU SOLDE DE RETRAIT CÔTÉ SERVEUR ---
+    let withdrawBalance = 0;
+    const now = new Date();
+
+    // 1. Produits courts termes terminés
+    if (user.shortTermProducts && user.shortTermProducts.length > 0) {
+        user.shortTermProducts.forEach(prod => {
+            const unlockDate = new Date(prod.unlockDate);
+            if (unlockDate <= now) {
+                // Produit fini : Capital + Gains totaux (5 jours * gain journalier)
+                const totalGains = prod.dailyGain * 5; 
+                withdrawBalance += (prod.amount + totalGains);
+            }
+        });
+    }
+
+    // 2. Produit Long Terme
+    if (user.hasLongTerm && user.longTermStartDate) {
+        const startDate = new Date(user.longTermStartDate);
+        const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+        
+        if (daysPassed >= 55) {
+            // Terminé : Tous les gains (55 * 700)
+            withdrawBalance += (700 * 55);
+        } else if (daysPassed > 0) {
+            // En cours : Gains générés jusqu'à aujourd'hui
+            withdrawBalance += (700 * daysPassed);
+        }
+    }
+    // -----------------------------------------------
+
+    res.json({ 
+        token, 
+        role: user.role, 
+        balance: user.balance,
+        depositBalance: user.balance, // Solde pour achats
+        withdrawBalance: withdrawBalance, // Solde calculé pour retraits
+        hasLongTerm: user.hasLongTerm, 
+        fullName: user.fullName,
+        monthlyPurchasesCount: user.monthlyPurchasesCount,
+        remainingPurchases: 2 - user.monthlyPurchasesCount, 
+        shortTermProducts: user.shortTermProducts,
+        referralCode: user.referralCode, 
+        referralCount: user.referralCount, 
+        referralEarnings: user.referralEarnings
+    });
+});
+
+app.get('/api/status', (req, res) => res.json({ active: isSiteActive }));
+
+// --- HISTORIQUE DES TRANSACTIONS (NOUVEAU) ---
+app.get('/api/transactions', authMiddleware, async (req, res) => {
+    try {
+        const transactions = await Transaction.find({ userId: req.user._id })
+            .sort({ date: -1 }) // Du plus récent au plus ancien
+            .limit(50); // Limite aux 50 dernières
+        
+        res.json({ success: true, transactions });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erreur lors du chargement de l\'historique.' });
+    }
+});
+
+// --- GAINS AUTOMATIQUES (Lun-Ven 8h) ---
 cron.schedule('0 8 * * 1-5', async () => {
     if (!isSiteActive) return;
     const users = await User.find({ $or: [{ hasLongTerm: true }, { 'shortTermProducts.0': { $exists: true } }] });
@@ -415,4 +666,4 @@ app.post('/api/admin/emergency-stop', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Serveur Dioxyspaywer lancé sur le port ${PORT}`));
+app.listen(PORT, () => console.log(` Serveur Dioxyspaywer lancé sur le port ${PORT}`));
