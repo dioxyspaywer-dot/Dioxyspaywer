@@ -23,25 +23,43 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Base de données connectée'))
     .catch(err => console.error('❌ Erreur DB:', err));
 
+// --- MIDDLEWARE AUTHENTIFICATION CORRIGÉ ---
 const authMiddleware = async (req, res, next) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    
     const token = req.headers.authorization;
-    if (!token) return res.status(401).json({ error: 'Accès refusé' });
+    if (!token) return res.status(401).json({ error: 'Accès refusé - Token manquant' });
+    
     try {
         const decoded = jwt.verify(token.split(' ')[1], process.env.JWT_SECRET);
         req.user = await User.findById(decoded.id);
+        
+        // Vérification si l'utilisateur existe
+        if (!req.user) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
+        
         if (!req.user.isActive && req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
             return res.status(403).json({ error: 'Compte désactivé.' });
         }
         next();
     } catch (e) {
-        res.status(401).json({ error: 'Token invalide' });
+        console.error('Erreur token:', e);
+        res.status(401).json({ error: 'Token invalide ou expiré' });
     }
 };
 
+// --- INSCRIPTION AVEC PARRAINAGE ---
 app.post('/api/register', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    
     const { fullName, phone, country, password, referralCode } = req.body;
+    
+    // Validation des champs requis
+    if (!fullName || !phone || !password) {
+        return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
+    }
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     let role = 'user';
     if (phone === process.env.CREATOR_WALLET_PHONE) role = 'admin';
@@ -58,6 +76,7 @@ app.post('/api/register', async (req, res) => {
             await Transaction.create({ userId: sponsor._id, type: 'REFERRAL_BONUS', amount: 350, method: 'Parrainage', status: 'SUCCESS', reference: `REF_${Date.now()}` });
         }
     }
+    
     try {
         await User.create({ fullName, phone, country, password: hashedPassword, role, referredBy: referredByUserId });
         res.json({ success: true, message: 'Inscription réussie' });
@@ -66,13 +85,24 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// --- CONNEXION AVEC HISTORIQUE ET SOLDES ---
+// --- CONNEXION CORRIGÉE ---
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    
     const { phone, password } = req.body;
+    
+    // Validation des champs
+    if (!phone || !password) {
+        return res.status(400).json({ error: 'Téléphone et mot de passe requis' });
+    }
+    
     const user = await User.findOne({ phone });
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-        return res.status(400).json({ error: 'Identifiants incorrects' });
+    if (!user) {
+        return res.status(400).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    if (!(await bcrypt.compare(password, user.password))) {
+        return res.status(400).json({ error: 'Mot de passe incorrect' });
     }
 
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -153,10 +183,15 @@ cron.schedule('0 8 * * 1-5', async () => {
     }
 });
 
-// --- INVESTISSEMENT (MIS À JOUR POUR 4 PRODUITS) ---
+// --- INVESTISSEMENT CORRIGÉ ---
 app.post('/api/invest', authMiddleware, async (req, res) => {
     const { productType, amount } = req.body;
     const user = req.user;
+    
+    // Vérification que l'utilisateur existe
+    if (!user) {
+        return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
     
     if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
     if (productType !== 'longterm' && !user.hasLongTerm) return res.status(403).json({ error: 'Produit Long Terme obligatoire.' });
@@ -185,10 +220,10 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
             dailyGain = 1500;
         } else if (productType === 'prod3') {
             if (amount !== 5000) return res.status(400).json({ error: 'Prix incorrect.' });
-            dailyGain = 2000; // Nouveau Produit 3
+            dailyGain = 2000;
         } else if (productType === 'prod4') {
             if (amount !== 10000) return res.status(400).json({ error: 'Prix incorrect.' });
-            dailyGain = 5000; // Nouveau Produit 4
+            dailyGain = 5000;
         } else {
             return res.status(400).json({ error: 'Produit inconnu.' });
         }
@@ -211,6 +246,8 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
     if (amount < 2000) return res.status(400).json({ error: 'Minimum 2000 FCFA' });
     try {
         const user = req.user;
+        if (!user) return res.status(401).json({ error: 'Utilisateur non authentifié' });
+        
         const invoiceNumber = `DXP_${Date.now()}`;
         const postData = {
             "master_key": process.env.PAYDUNYA_MASTER_KEY,
@@ -265,6 +302,9 @@ app.post('/api/webhook/deposit', async (req, res) => {
 app.post('/api/withdraw', authMiddleware, async (req, res) => {
     const { amount, network, phone } = req.body;
     const user = req.user;
+    
+    if (!user) return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    
     const now = new Date();
     if (amount < 1000) return res.status(400).json({ error: 'Min 1000 FCFA' });
     const dayOfWeek = now.getDay();
@@ -306,14 +346,14 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
 });
 
 app.get('/api/admin/dashboard', async (req, res) => {
-    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Accès réservé créateur.' });
+    if (!req.user || req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Accès réservé créateur.' });
     const users = await User.find();
     const totalVault = users.reduce((acc, curr) => acc + curr.balance, 0);
     res.json({ users, totalVault });
 });
 
 app.post('/api/admin/emergency-stop', async (req, res) => {
-    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
+    if (!req.user || req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
     isSiteActive = false;
     try {
         const creatorPhone = process.env.CREATOR_WALLET_PHONE;
