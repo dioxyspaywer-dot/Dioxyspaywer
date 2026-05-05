@@ -131,24 +131,28 @@
             <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
             <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Durée 5 jours)</p>
 
+            <!-- PRODUIT 1 -->
             <div class="card">
                 <p><strong>Produit 1:</strong> 2000 FCFA → <span style="color:#00e676">1000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 5000 FCFA</small>
                 <button onclick="invest('prod1', 2000)">Investir</button>
             </div>
 
+            <!-- PRODUIT 2 -->
             <div class="card">
                 <p><strong>Produit 2:</strong> 3000 FCFA → <span style="color:#00e676">1500 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 7500 FCFA</small>
                 <button onclick="invest('prod2', 3000)">Investir</button>
             </div>
 
+            <!-- PRODUIT 3 (CORRIGÉ À 5000F) -->
             <div class="card">
                 <p><strong>Produit 3:</strong> 5000 FCFA → <span style="color:#00e676">2000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 10000 FCFA</small>
                 <button onclick="invest('prod3', 5000)">Investir</button>
             </div>
 
+            <!-- PRODUIT 4 (NOUVEAU À 10000F) -->
             <div class="card">
                 <p><strong>Produit 4:</strong> 10000 FCFA → <span style="color:#00e676">5000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 25000 FCFA</small>
@@ -192,7 +196,7 @@
                 <select id="dep-network">
                     <option value="" disabled selected>Opérateur</option>
                     <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
-                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
+                    <optgroup label="🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
                     <optgroup label="🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button class="secondary" onclick="deposit()">Déposer</button>
@@ -203,9 +207,9 @@
                 <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
                 <select id="wit-network">
                     <option value="" disabled selected>Opérateur</option>
-                    <optgroup label="🇹 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
-                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
-                    <optgroup label="🇧 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
+                    <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
+                    <optgroup label="🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
+                    <optgroup label=" Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button onclick="withdraw()">Retirer</button>
             </div>
@@ -222,18 +226,18 @@
         <div id="admin-section">
             <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
             <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
-            <button class="danger" onclick="emergencyStop()">⚠️ DÉSACTIVER LE SITE</button>
+            <button class="danger" onclick="emergencyStop()">️ DÉSACTIVER LE SITE</button>
         </div>
     </div>
 
     <!-- BARRE DE NAVIGATION (6 OPTIONS) -->
     <div class="bottom-nav">
-        <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon">🏠</span><span>Tableau<br>de bord</span></div>
-        <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon">🛒</span><span>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon">📦</span><span>Mes<br>Produits</span></div>
+        <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon"></span><span>Tableau<br>de bord</span></div>
+        <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon"></span><span>Produits</span></div>
+        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon"></span><span>Mes<br>Produits</span></div>
         <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon"></span><span>Compte</span></div>
         <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Caisse</span></div>
-        <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>Historique</span></div>
+        <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon"></span><span>Historique</span></div>
     </div>
 
     <script>
@@ -293,7 +297,6 @@
                 userData.shortTermProducts.forEach(prod => {
                     const unlockDate = new Date(prod.unlockDate);
                     if (unlockDate <= now) {
-                        // Produit fini : Capital + Gains totaux (5 jours * gain journalier)
                         const totalGains = prod.dailyGain * 5; 
                         withdrawableAmount += (prod.amount + totalGains);
                     }
@@ -399,58 +402,52 @@
             if (userData.hasLongTerm) { document.getElementById('btn-buy-lt-shop').style.display = 'none'; document.getElementById('lt-status-shop').style.display = 'block'; }
             
             renderMyProducts();
-       async function invest(type, amount) {
-    // ÉTAPE 1 : Vérifications locales immédiates
-    console.log("🔍 Début investissement :", type, amount);
-    
-    if (!userData.balance || userData.balance < amount) {
-        alert("❌ Solde insuffisant ! Vous avez " + (userData.balance || 0) + " FCFA.");
-        return;
-    }
-
-    if (type !== 'longterm' && (!userData.monthlyPurchasesCount || userData.monthlyPurchasesCount >= 2)) {
-        alert("⚠️ Limite mensuelle atteinte (2 achats max).");
-        return;
-    }
-
-    if (type !== 'longterm' && !userData.hasLongTerm) {
-        alert(" Produit Long Terme obligatoire avant d'acheter un produit court terme.");
-        return;
-    }
-
-    // ÉTAPE 2 : Envoi de la requête au serveur
-    try {
-        const response = await fetch(`${API_URL}/invest`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({ productType: type, amount: parseInt(amount) })
-        });
-
-        const data = await response.json();
-        console.log(" Réponse du serveur:", data);
-
-        if (data.error) {
-            // Affiche l'erreur EXACTE venant du serveur
-            alert("❌ ERREUR SERVEUR :\n" + data.error);
-        } else if (data.success) {
-            alert("✅ SUCCÈS ! Votre achat est enregistré.");
-            location.reload(); // Recharge la page pour mettre à jour le solde
-        } else {
-            alert("⚠️ Réponse inconnue du serveur.");
-        }
-
-    } catch (err) {
-        console.error("💥 Erreur technique:", err);
-        alert(" Problème de connexion au serveur. Vérifiez votre internet.");
-    }
-        }     renderHistory();
+            renderHistory();
             
             if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
         }
 
+        // --- FONCTION INVESTISSEMENT CORRIGÉE ET SIMPLIFIÉE ---
+        async function invest(type, amount) {
+            console.log("👉 Clic détecté sur :", type, "Montant:", amount);
+            
+            // Vérification basique du solde local
+            if (!userData || userData.balance < amount) {
+                alert("Solde insuffisant ! Vous avez " + (userData.balance || 0) + " FCFA.");
+                return;
+            }
+
+            try {
+                // Envoi de la requête au serveur
+                const response = await fetch(`${API_URL}/invest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ 
+                        productType: type, 
+                        amount: parseInt(amount) 
+                    })
+                });
+
+                const data = await response.json();
+                console.log("Réponse reçue:", data);
+
+                if (data.success) {
+                    alert("✅ Achat réussi ! Rechargement...");
+                    location.reload(); // Recharge la page pour voir le nouveau solde
+                } else {
+                    // Affiche l'erreur précise venant du serveur
+                    alert(" Échec : " + (data.error || "Erreur inconnue"));
+                }
+
+            } catch (error) {
+                console.error("Erreur technique:", error);
+                alert("Problème de connexion au serveur.");
+            }
+        }
+        // -----------------------------------------
 
         async function deposit() {
             const phone = document.getElementById('dep-phone').value;
@@ -505,4 +502,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-                                             </html>
+    </html>
