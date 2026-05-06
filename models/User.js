@@ -5,39 +5,44 @@ const userSchema = new mongoose.Schema({
     phone: { type: String, required: true, unique: true },
     country: { type: String, required: true },
     password: { type: String, required: true },
-    role: { type: String, default: 'user' }, // 'user' ou 'admin'
+    role: { type: String, default: 'user' },
     
     balance: { type: Number, default: 0 },
     
-    // Produits
+    // --- PRODUITS ---
     hasLongTerm: { type: Boolean, default: false },
     longTermStartDate: { type: Date },
-    shortTermProducts: [{  // ✅ CORRECTION ICI
-        type: String,
-        amount: Number,
-        dailyGain: Number,
-        startDate: Date,
-        unlockDate: Date
+    
+    // ✅ CORRECTION ICI : On définit explicitement la structure des objets
+    shortTermProducts: [{
+        type: { type: String, required: true },      // ex: 'prod1'
+        amount: { type: Number, required: true },    // ex: 2000
+        dailyGain: { type: Number, required: true }, // ex: 1000
+        startDate: { type: Date, required: true },
+        unlockDate: { type: Date, required: true }
     }],
     
-    // Parrainage
+    // --- PARRAINAGE ---
     referralCode: { type: String, unique: true, sparse: true },
     referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     referralCount: { type: Number, default: 0 },
     referralEarnings: { type: Number, default: 0 },
     
-    // Limites mensuelles
+    // --- LIMITES ---
     monthlyPurchasesCount: { type: Number, default: 0 },
     lastPurchaseMonth: { type: String },
     
-    // Retraits
+    // --- RETRAITS ---
     lastWithdrawDate: { type: Date },
     
-    // Statut
+    // --- STATUT ---
     isActive: { type: Boolean, default: true }
-}, { timestamps: true });
+}, { 
+    timestamps: true,
+    strict: true // On garde strict true car on a défini le schéma ci-dessus
+});
 
-// Générer un code parrainage unique avant sauvegarde
+// Génération automatique du code parrainage
 userSchema.pre('save', function(next) {
     if (!this.referralCode) {
         this.referralCode = Math.floor(1000 + Math.random() * 9000) + '-' + 
