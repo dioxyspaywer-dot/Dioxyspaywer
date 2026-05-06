@@ -405,13 +405,50 @@
         }
 
         async function invest(type, amount) {
-            const res = await fetch(`${API_URL}/invest`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ productType: type, amount }) });
-            const data = await res.json();
-            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
-            alert(data.message || data.error);
-            if(data.success) { 
-                location.reload(); // Rechargement pour synchroniser les données
-            }
+    console.log(" Tentative d'investissement :", type, amount);
+
+    if (!userData || userData.balance < amount) {
+        alert("❌ Solde insuffisant !");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/invest`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ productType: type, amount: parseInt(amount) })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert("✅ Investissement réussi ! Mise à jour de l'historique...");
+            
+            // ⚡ NOUVEAU : On récupère les données fraîches du serveur (incluant l'historique)
+            const refreshRes = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: userData.phone, password: 'dummy' }) 
+                // Note: Le mot de passe ici n'est pas vérifié car on utilise le token si on était connecté, 
+                // mais pour simplifier, on va juste recharger la page avec les nouvelles données stockées localement si possible,
+                // ou mieux, on force un rechargement complet qui déclenchera un login automatique si le token est bon.
+            });
+            
+            // La méthode la plus simple et fiable pour tout synchroniser (solde + historique) :
+            localStorage.removeItem('userData'); // On efface l'ancien cache
+            location.reload(); // Rechargement -> Le script détectera le token et fera un login frais avec l'historique à jour
+            
+        } else {
+            alert("❌ Échec : " + (data.error || "Erreur inconnue"));
+        }
+
+    } catch (error) {
+        console.error("💥 Erreur:", error);
+        alert("❌ Problème de connexion.");
+    }
         }
 
         async function deposit() {
