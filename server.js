@@ -58,6 +58,7 @@ const authMiddleware = async (req, res, next) => {
 app.get('/api/status', (req, res) => res.json({ active: isSiteActive }));
 
 app.post('/api/register', async (req, res) => {
+    if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     try {
         const { fullName, phone, country, password, referralCode } = req.body;
         if (!fullName || !phone || !password) return res.status(400).json({ error: 'Champs manquants' });
@@ -68,14 +69,40 @@ app.post('/api/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         let role = (phone === process.env.CREATOR_WALLET_PHONE) ? 'admin' : 'user';
         
-        await User.create({ fullName, phone, country, password: hashedPassword, role });
+        let referredByUserId = null;
+
+        // --- LOGIQUE DE PARRAINAGE (À RÉINTÉGRER) ---
+        if (referralCode && referralCode.trim() !== '') {
+            const sponsor = await User.findOne({ referralCode: referralCode.trim() });
+            if (sponsor) {
+                referredByUserId = sponsor._id;
+                
+                // Créditer les 350 FCFA au parrain
+                sponsor.balance += 350;
+                sponsor.referralCount += 1;
+                sponsor.referralEarnings += 350;
+                await sponsor.save(); // Sauvegarder les modifications du parrain
+                
+                // Créer une transaction pour le bonus
+                await Transaction.create({
+                    userId: sponsor._id,
+                    type: 'REFERRAL_BONUS',
+                    amount: 350,
+                    method: 'Parrainage',
+                    status: 'SUCCESS',
+                    reference: `REF_${Date.now()}`
+                });
+            }
+        }
+        // ---------------------------------------------
+        
+        await User.create({ fullName, phone, country, password: hashedPassword, role, referredBy: referredByUserId });
         res.json({ success: true, message: 'Inscription réussie' });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });
-
 app.post('/api/login', async (req, res) => {
     try {
         const { phone, password } = req.body;
