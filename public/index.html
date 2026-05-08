@@ -131,28 +131,60 @@
             <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
             <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Durée 5 jours)</p>
 
+            <!-- PRODUIT 1 -->
             <div class="card">
                 <p><strong>Produit 1:</strong> 2000 FCFA → <span style="color:#00e676">1000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 5000 FCFA</small>
                 <button onclick="invest('prod1', 2000)">Investir</button>
             </div>
 
+            <!-- PRODUIT 2 -->
             <div class="card">
                 <p><strong>Produit 2:</strong> 3000 FCFA → <span style="color:#00e676">1500 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 7500 FCFA</small>
                 <button onclick="invest('prod2', 3000)">Investir</button>
             </div>
 
+            <!-- PRODUIT 3 -->
             <div class="card">
                 <p><strong>Produit 3:</strong> 5000 FCFA → <span style="color:#00e676">2000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 10000 FCFA</small>
                 <button onclick="invest('prod3', 5000)">Investir</button>
             </div>
 
+            <!-- PRODUIT 4 -->
             <div class="card">
                 <p><strong>Produit 4:</strong> 10000 FCFA → <span style="color:#00e676">5000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 25000 FCFA</small>
                 <button onclick="invest('prod4', 10000)">Investir</button>
+            </div>
+
+            <!-- PRODUIT 5 (NOUVEAU) -->
+            <div class="card">
+                <p><strong>Produit 5:</strong> 15000 FCFA → <span style="color:#00e676">6000 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 30000 FCFA</small>
+                <button onclick="invest('prod5', 15000)">Investir</button>
+            </div>
+
+            <!-- PRODUIT 6 (NOUVEAU) -->
+            <div class="card">
+                <p><strong>Produit 6:</strong> 20000 FCFA → <span style="color:#00e676">8000 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 40000 FCFA</small>
+                <button onclick="invest('prod6', 20000)">Investir</button>
+            </div>
+
+            <!-- PRODUIT 7 (NOUVEAU) -->
+            <div class="card">
+                <p><strong>Produit 7:</strong> 30000 FCFA → <span style="color:#00e676">12000 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 60000 FCFA</small>
+                <button onclick="invest('prod7', 30000)">Investir</button>
+            </div>
+
+            <!-- PRODUIT 8 (NOUVEAU) -->
+            <div class="card">
+                <p><strong>Produit 8:</strong> 40000 FCFA → <span style="color:#00e676">16000 FCFA/j</span></p>
+                <small style="color:#aaa;">Total gains: 80000 FCFA</small>
+                <button onclick="invest('prod8', 40000)">Investir</button>
             </div>
         </div>
 
@@ -203,7 +235,7 @@
                 <input type="number" id="wit-amount" placeholder="Montant retrait (Min 1000)">
                 <select id="wit-network">
                     <option value="" disabled selected>Opérateur</option>
-                    <optgroup label="🇹 Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
+                    <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
                     <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
                     <optgroup label="🇧 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
@@ -222,18 +254,18 @@
         <div id="admin-section">
             <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
             <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
-            <button class="danger" onclick="emergencyStop()">⚠️ DÉSACTIVER LE SITE</button>
+            <button class="danger" onclick="emergencyStop()">️ DÉSACTIVER LE SITE</button>
         </div>
     </div>
 
     <!-- BARRE DE NAVIGATION (6 OPTIONS) -->
     <div class="bottom-nav">
-        <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon">🏠</span><span>Tableau<br>de bord</span></div>
+        <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon"></span><span>Tableau<br>de bord</span></div>
         <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon">🛒</span><span>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon">📦</span><span>Mes<br>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon"></span><span>Compte</span></div>
+        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon"></span><span>Mes<br>Produits</span></div>
+        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon">👤</span><span>Compte</span></div>
         <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Caisse</span></div>
-        <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon"></span>📜<span>Historique</span></div>
+        <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>Historique</span></div>
     </div>
 
     <script>
@@ -293,7 +325,6 @@
                 userData.shortTermProducts.forEach(prod => {
                     const unlockDate = new Date(prod.unlockDate);
                     if (unlockDate <= now) {
-                        // Produit fini : Capital + Gains totaux (5 jours * gain journalier)
                         const totalGains = prod.dailyGain * 5; 
                         withdrawableAmount += (prod.amount + totalGains);
                     }
@@ -330,6 +361,10 @@
                     if(prod.type === 'prod2') name = "Produit 2";
                     if(prod.type === 'prod3') name = "Produit 3";
                     if(prod.type === 'prod4') name = "Produit 4";
+                    if(prod.type === 'prod5') name = "Produit 5"; // NOUVEAU
+                    if(prod.type === 'prod6') name = "Produit 6"; // NOUVEAU
+                    if(prod.type === 'prod7') name = "Produit 7"; // NOUVEAU
+                    if(prod.type === 'prod8') name = "Produit 8"; // NOUVEAU
                     
                     container.innerHTML += `<div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}"><h4>${name}</h4><p>Gain/jour: ${prod.dailyGain} FCFA</p><div class="product-status">${isFinished?'✅ Terminé':' '+daysLeft+' jours restants'}</div></div>`;
                 });
@@ -340,7 +375,7 @@
         function renderHistory() {
             const container = document.getElementById('history-list');
             container.innerHTML = '';
-            if (!userData.transactions || userData.transactions.length === 0) {
+            if (!userData || !userData.transactions || userData.transactions.length === 0) {
                 container.innerHTML = '<p style="color:#aaa; text-align:center; margin-top:20px;">Aucune transaction pour le moment.</p>';
                 return;
             }
@@ -404,51 +439,40 @@
             if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
         }
 
+        // --- FONCTION INVESTISSEMENT MISE À JOUR POUR 8 PRODUITS ---
         async function invest(type, amount) {
-    console.log(" Tentative d'investissement :", type, amount);
+            console.log(" Début investissement :", type, amount);
 
-    if (!userData || userData.balance < amount) {
-        alert("❌ Solde insuffisant !");
-        return;
-    }
+            if (!userData || userData.balance < amount) {
+                alert("❌ Solde insuffisant ! Vous avez " + (userData.balance || 0) + " FCFA.");
+                return;
+            }
 
-    try {
-        const response = await fetch(`${API_URL}/invest`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify({ productType: type, amount: parseInt(amount) })
-        });
+            try {
+                const response = await fetch(`${API_URL}/invest`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ productType: type, amount: parseInt(amount) })
+                });
 
-        const data = await response.json();
+                const data = await response.json();
+                console.log(" Réponse serveur:", data);
 
-        if (data.success) {
-            alert("✅ Investissement réussi ! Mise à jour de l'historique...");
-            
-            // ⚡ NOUVEAU : On récupère les données fraîches du serveur (incluant l'historique)
-            const refreshRes = await fetch(`${API_URL}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: userData.phone, password: 'dummy' }) 
-                // Note: Le mot de passe ici n'est pas vérifié car on utilise le token si on était connecté, 
-                // mais pour simplifier, on va juste recharger la page avec les nouvelles données stockées localement si possible,
-                // ou mieux, on force un rechargement complet qui déclenchera un login automatique si le token est bon.
-            });
-            
-            // La méthode la plus simple et fiable pour tout synchroniser (solde + historique) :
-            localStorage.removeItem('userData'); // On efface l'ancien cache
-            location.reload(); // Rechargement -> Le script détectera le token et fera un login frais avec l'historique à jour
-            
-        } else {
-            alert("❌ Échec : " + (data.error || "Erreur inconnue"));
-        }
+                if (data.success) {
+                    alert("✅ Investissement réussi ! Mise à jour...");
+                    localStorage.removeItem('userData');
+                    location.reload();
+                } else {
+                    alert("❌ Échec : " + (data.error || "Erreur inconnue"));
+                }
 
-    } catch (error) {
-        console.error("💥 Erreur:", error);
-        alert("❌ Problème de connexion.");
-    }
+            } catch (error) {
+                console.error(" Erreur:", error);
+                alert("❌ Problème de connexion.");
+            }
         }
 
         async function deposit() {
@@ -504,4 +528,4 @@
         if (token && userData) loadDashboard();
     </script>
 </body>
-    </html>
+                    </html>
