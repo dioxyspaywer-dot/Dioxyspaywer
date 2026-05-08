@@ -202,61 +202,106 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
     }
 });
 
-// Dépôt (Simplifié)
+// ... (le reste du code server.js reste identique) ...
+
+// --- DÉPÔT AVEC SENDAVAPAY ---
 app.post('/api/deposit', authMiddleware, async (req, res) => {
+    const { amount, network, phone } = req.body; 
+    if (amount < 2000) return res.status(400).json({ error: 'Minimum 2000 FCFA' });
+
     try {
-        const { amount, network, phone } = req.body;
-        if (amount < 2000) return res.status(400).json({ error: 'Min 2000 FCFA' });
-        
-        // Création facture PayDunya
+        const user = req.user;
         const invoiceNumber = `DXP_${Date.now()}`;
+        
+        // Configuration pour Sendavapay (À adapter selon leur doc exacte)
+        // Exemple de payload standard pour un agrégateur
         const postData = {
-            master_key: process.env.PAYDUNYA_MASTER_KEY,
-            token: process.env.PAYDUNYA_SIGNATURE_TOKEN,
-            callback_url: process.env.PAYDUNYA_CALLBACK_URL,
-            return_url: process.env.PAYDUNYA_RETURN_URL,
-            cancel_url: process.env.PAYDUNYA_CANCEL_URL,
-            invoice_number: invoiceNumber,
-            description: "Dépôt Dioxyspaywer",
-            total_amount: parseInt(amount),
-            currency: "XOF",
-            customer: { first_name: req.user.fullName.split(' ')[0], last_name: "User", phone_number: phone },
-            custom_data: { user_id: req.user._id.toString(), network: network }
+            "amount": parseInt(amount),
+            "currency": "XOF",
+            "phone_number": phone, // Numéro du client
+            "network": network,    // Opérateur (TMONEY, MOOV, etc.)
+            "reference": invoiceNumber,
+            "description": `Dépôt Dioxyspaywer - ${user.fullName}`,
+            "callback_url": process.env.SENDAVA_CALLBACK_URL,
+            "return_url": process.env.SENDAVA_RETURN_URL,
+            "merchant_id": process.env.SENDAVA_MERCHANT_ID // Si nécessaire
         };
 
-        const response = await axios.post('https://paydunya.com/checkout-invoice/v1/invoice', postData, {
-            headers: { 'Content-Type': 'application/json', 'PayDunya-Master-Key': process.env.PAYDUNYA_MASTER_KEY, 'PayDunya-Token': process.env.PAYDUNYA_SIGNATURE_TOKEN }
+        // Envoi de la requête à l'API Sendavapay
+        // URL de base à vérifier dans la doc Sendavapay (ex: https://api.sendavapay.com/v1/charge)
+        const SENDAVA_API_URL = 'https://api.sendavapay.com/v1/charge'; // ⚠️ Vérifiez cette URL dans leur doc
+
+        const response = await axios.post(SENDAVA_API_URL, postData, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.SENDAVA_SECRET_KEY}`, // Ou 'x-api-key' selon leur doc
+                'X-Public-Key': process.env.SENDAVA_PUBLIC_KEY
+            }
         });
 
-        if (response.data && response.data.response_code === "success") {
-            await Transaction.create({ userId: req.user._id, type: 'DEPOSIT', amount, method: network, status: 'PENDING', reference: invoiceNumber });
-            res.json({ success: true, paymentUrl: response.data.checkout_url });
+        // Analyse de la réponse
+        // Adaptez cette condition selon la réponse réelle de Sendavapay
+        if (response.data && (response.data.success === true || response.data.status === 'pending' || response.data.checkout_url)) {
+            
+            const paymentUrl = response.data.checkout_url || response.data.payment_link; // Adapter selon la réponse
+            
+            // Enregistrer la transaction en attente
+            await Transaction.create({ 
+                userId: user._id, 
+                type: 'DEPOSIT', 
+                amount: amount, 
+                method: network, 
+                status: 'PENDING', 
+                reference: invoiceNumber 
+            });
+
+            res.json({ success: true, message: 'Redirection vers Sendavapay...', paymentUrl: paymentUrl });
         } else {
-            res.status(400).json({ error: 'Erreur PayDunya' });
+            console.error("Réponse Sendavapay:", response.data);
+            res.status(400).json({ error: 'Erreur lors de la création du paiement Sendavapay.' });
         }
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Erreur dépôt' });
+
+    } catch (error) {
+        console.error("Erreur Sendavapay:", error.response ? error.response.data : error.message);
+        res.status(500).json({ error: 'Erreur de connexion à Sendavapay.' });
     }
 });
 
-// Webhook
+// --- WEBHOOK SENDAVAPAY (Confirmation de paiement) ---
 app.post('/api/webhook/deposit', async (req, res) => {
     try {
-        if (req.body.status === "completed") {
-            const tx = await Transaction.findOne({ reference: req.body.invoice_number });
-            if (tx && tx.status === 'PENDING') {
-                tx.status = 'SUCCESS';
-                await tx.save();
-                const user = await User.findById(tx.userId);
+        const data = req.body;
+        
+        // Vérifier la signature de sécurité si Sendavapay l'exige (recommandé)
+        // Ici on suppose que la requête est valide pour l'exemple
+        
+        // Identifier le statut du paiement selon la réponse Sendavapay
+        // Exemple : data.status === 'SUCCESS' ou data.event === 'payment_completed'
+        if (data.status === 'SUCCESS' || data.event === 'completed') {
+            
+            const invoiceNumber = data.reference || data.invoice_number; // Adapter selon le champ renvoyé
+            const amount = parseFloat(data.amount || data.total_amount);
+            
+            const transaction = await Transaction.findOne({ reference: invoiceNumber });
+            
+            if (transaction && transaction.status === 'PENDING') {
+                transaction.status = 'SUCCESS';
+                await transaction.save();
+                
+                const user = await User.findById(transaction.userId);
                 if (user) {
-                    user.balance += parseFloat(req.body.total_amount);
+                    user.balance += amount;
                     await user.save();
+                    console.log(`💰 Dépôt Sendavapay confirmé : ${amount} FCFA pour ${user.phone}`);
                 }
             }
         }
-        res.status(200).send("OK");
-    } catch (e) { res.status(500).send("Error"); }
+        
+        res.status(200).send("OK"); // Répondre 200 OK à Sendavapay pour confirmer réception
+    } catch (e) {
+        console.error("Erreur Webhook:", e);
+        res.status(500).send("Error");
+    }
 });
 
 // Retrait
