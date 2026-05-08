@@ -435,29 +435,56 @@
         }
 
         function loadDashboard() {
-            document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('main-content').classList.remove('hidden');
-            switchTab('dashboard');
-            document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
-            document.getElementById('acc-name').innerText = userData.fullName;
-            document.getElementById('acc-phone').innerText = userData.phone;
-            document.getElementById('acc-country').innerText = userData.country;
-            document.getElementById('acc-ref-count').innerText = userData.referralCount || 0;
-            document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
-            
-            const depositBal = userData.balance || 0;
-            const withdrawBal = calculateWithdrawBalance();
-            
-            document.getElementById('deposit-balance').innerText = depositBal;
-            document.getElementById('withdraw-balance').innerText = withdrawBal;
-            
-            if (userData.referralCode) document.getElementById('my-referral-code').innerText = userData.referralCode;
-            if (userData.hasLongTerm) { document.getElementById('btn-buy-lt-shop').style.display = 'none'; document.getElementById('lt-status-shop').style.display = 'block'; }
-            
-            renderMyProducts();
-            renderHistory();
-            
-            if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
+    // Afficher le contenu principal et cacher l'authentification
+    document.getElementById('auth-container').classList.add('hidden');
+    document.getElementById('main-content').classList.remove('hidden');
+    
+    // Initialiser sur l'onglet Tableau de bord
+    switchTab('dashboard');
+
+    // Mise à jour des informations personnelles
+    document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
+    document.getElementById('acc-name').innerText = userData.fullName;
+    document.getElementById('acc-phone').innerText = userData.phone;
+    document.getElementById('acc-country').innerText = userData.country;
+    document.getElementById('acc-ref-count').innerText = userData.referralCount || 0;
+    document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
+    
+    // --- MISE À JOUR DES SOLDES ---
+    
+    // 1. Solde DÉPÔT (Pour investir)
+    const depositBal = userData.balance || 0;
+    document.getElementById('deposit-balance').innerText = depositBal;
+    
+    // 2. Solde RETRAITE (Gains libérés uniquement)
+    // On utilise le nouveau champ 'withdrawalBalance' envoyé par le serveur
+    const withdrawBal = userData.withdrawalBalance || 0;
+    document.getElementById('withdraw-balance').innerText = withdrawBal;
+    
+    // Affichage du code parrainage
+    if (userData.referralCode) {
+        document.getElementById('my-referral-code').innerText = userData.referralCode;
+    }
+
+    // Gestion de l'affichage du bouton Long Terme (Caché si déjà acheté)
+    if (userData.hasLongTerm) { 
+        document.getElementById('btn-buy-lt-shop').style.display = 'none'; 
+        document.getElementById('lt-status-shop').style.display = 'block'; 
+    }
+    
+    // --- AFFICHAGE DES PRODUITS ET GAINS ---
+    
+    // Appel de la fonction mise à jour qui affiche les "Gains accumulés"
+    renderMyProducts();
+    
+    // Affichage de l'historique des transactions
+    renderHistory();
+    
+    // Section Admin (si applicable)
+    if (userData.role === 'admin') { 
+        document.getElementById('admin-section').style.display = 'block'; 
+        loadAdminData(); 
+    }
         }
 
         // --- FONCTION INVESTISSEMENT MISE À JOUR POUR 8 PRODUITS ---
