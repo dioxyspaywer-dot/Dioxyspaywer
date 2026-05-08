@@ -340,38 +340,59 @@
         }
 
         function renderMyProducts() {
-            const container = document.getElementById('my-products-list');
-            container.innerHTML = '';
-            let hasProducts = false;
-            const now = new Date();
-            if (userData.hasLongTerm) {
-                hasProducts = true;
-                const daysPassed = Math.floor((now - new Date(userData.longTermStartDate)) / (1000 * 60 * 60 * 24));
-                const daysLeft = Math.max(0, 55 - daysPassed);
-                container.innerHTML += `<div class="card active-product"><h4>⭐ Long Terme</h4><p>Gain/jour: 700 FCFA</p><div class="product-status"> ${daysLeft} jours restants</div></div>`;
-            }
-            if (userData.shortTermProducts) {
-                userData.shortTermProducts.forEach(prod => {
-                    hasProducts = true;
-                    const unlockDate = new Date(prod.unlockDate);
-                    const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
-                    const isFinished = daysLeft <= 0;
-                    let name = "Court Terme";
-                    if(prod.type === 'prod1') name = "Produit 1";
-                    if(prod.type === 'prod2') name = "Produit 2";
-                    if(prod.type === 'prod3') name = "Produit 3";
-                    if(prod.type === 'prod4') name = "Produit 4";
-                    if(prod.type === 'prod5') name = "Produit 5"; // NOUVEAU
-                    if(prod.type === 'prod6') name = "Produit 6"; // NOUVEAU
-                    if(prod.type === 'prod7') name = "Produit 7"; // NOUVEAU
-                    if(prod.type === 'prod8') name = "Produit 8"; // NOUVEAU
-                    
-                    container.innerHTML += `<div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}"><h4>${name}</h4><p>Gain/jour: ${prod.dailyGain} FCFA</p><div class="product-status">${isFinished?'✅ Terminé':' '+daysLeft+' jours restants'}</div></div>`;
-                });
-            }
-            if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
-        }
+    const container = document.getElementById('my-products-list');
+    container.innerHTML = '';
+    let hasProducts = false;
+    const now = new Date();
 
+    // --- PRODUIT LONG TERME ---
+    if (userData.hasLongTerm) {
+        hasProducts = true;
+        const daysPassed = Math.floor((now - new Date(userData.longTermStartDate)) / (1000 * 60 * 60 * 24));
+        const daysLeft = Math.max(0, 55 - daysPassed);
+        const gains = userData.longTermAccumulatedGains || 0;
+        
+        container.innerHTML += `
+            <div class="card active-product">
+                <h4>⭐ Long Terme</h4>
+                <p>Gain/jour: 700 FCFA</p>
+                <div class="product-status">⏳ ${daysLeft} jours restants</div>
+                <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
+            </div>`;
+    }
+
+    // --- PRODUITS COURTS TERMES ---
+    if (userData.shortTermProducts) {
+        userData.shortTermProducts.forEach(prod => {
+            hasProducts = true;
+            const unlockDate = new Date(prod.unlockDate);
+            const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
+            const isFinished = daysLeft <= 0;
+            
+            let name = "Court Terme";
+            if(prod.type === 'prod1') name = "Produit 1";
+            if(prod.type === 'prod2') name = "Produit 2";
+            if(prod.type === 'prod3') name = "Produit 3";
+            if(prod.type === 'prod4') name = "Produit 4";
+            if(prod.type === 'prod5') name = "Produit 5";
+            if(prod.type === 'prod6') name = "Produit 6";
+            if(prod.type === 'prod7') name = "Produit 7";
+            if(prod.type === 'prod8') name = "Produit 8";
+            
+            const gains = prod.accumulatedGains || 0;
+
+            container.innerHTML += `
+                <div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}">
+                    <h4>${name}</h4>
+                    <p>Gain/jour: ${prod.dailyGain} FCFA</p>
+                    <div class="product-status">${isFinished?'✅ Terminé (Gains transférés)':' '+daysLeft+' jours restants'}</div>
+                    <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
+                </div>`;
+        });
+    }
+
+    if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
+        }
         function renderHistory() {
             const container = document.getElementById('history-list');
             container.innerHTML = '';
