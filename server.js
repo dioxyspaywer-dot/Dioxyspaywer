@@ -121,6 +121,17 @@ app.post('/api/login', async (req, res) => {
              user.shortTermProducts.forEach(p => {
                  if(new Date(p.unlockDate) <= now) withdrawBalance += (p.amount + (p.dailyGain * 5));
              });
+            
+// ... calculs précédents ...
+
+const transactions = await Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50);
+
+res.json({ 
+    token, 
+    // ... autres champs ...
+    transactions: transactions, // ⚠️ CECI EST OBLIGATOIRE
+    // ...
+});
         }
         if(user.hasLongTerm && user.longTermStartDate) {
              const days = Math.floor((now - new Date(user.longTermStartDate)) / (1000*60*60*24));
