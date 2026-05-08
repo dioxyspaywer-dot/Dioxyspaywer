@@ -68,19 +68,19 @@ app.post('/api/register', async (req, res) => {
         let referredByUserId = null;
         let sponsor = null;
 
-        // Logique Parrainage
+        // Logique Parrainage (+350F)
         if (referralCode && referralCode.trim() !== '') {
             sponsor = await User.findOne({ referralCode: referralCode.trim() });
             if (sponsor) {
                 referredByUserId = sponsor._id;
                 
-                // Bonus 350 FCFA
+                // Créditer le bonus
                 sponsor.balance += 350;
                 sponsor.referralCount += 1;
                 sponsor.referralEarnings += 350;
                 await sponsor.save();
                 
-                // Enregistrement Historique Bonus
+                // Historique Bonus
                 await Transaction.create({
                     userId: sponsor._id,
                     type: 'REFERRAL_BONUS',
@@ -161,7 +161,7 @@ app.post('/api/login', async (req, res) => {
             referralCode: user.referralCode, 
             referralCount: user.referralCount || 0,
             referralEarnings: user.referralEarnings || 0,
-            transactions: transactions // ⚡ HISTORIQUE INCLUS ICI
+            transactions: transactions // ⚡ HISTORIQUE INCLUS
         });
     } catch (e) {
         console.error(e);
@@ -193,7 +193,6 @@ cron.schedule('0 8 * * 1-5', async () => {
                         totalDailyGain += prod.dailyGain;
                         activeShortTerms.push(prod);
                     }
-                    // Si expiré, on ne le garde pas dans la liste active (le capital est déjà compté dans withdrawBalance)
                 }
             }
             user.shortTermProducts = activeShortTerms;
@@ -213,7 +212,7 @@ cron.schedule('0 8 * * 1-5', async () => {
     } catch (e) { console.error("Erreur Cron:", e); }
 });
 
-// Investissement
+// Investissement (LOGIQUE DES 8 PRODUITS)
 app.post('/api/invest', authMiddleware, async (req, res) => {
     try {
         const { productType, amount } = req.body;
@@ -239,11 +238,16 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
             user.hasLongTerm = true; 
             user.longTermStartDate = new Date();
         } else {
-            // Configuration des 4 produits
+            // Configuration des 8 produits
             if (productType === 'prod1') { if (amount !== 2000) throw new Error('Prix P1'); dailyGain = 1000; }
             else if (productType === 'prod2') { if (amount !== 3000) throw new Error('Prix P2'); dailyGain = 1500; }
-            else if (productType === 'prod3') { if (amount !== 5000) throw new Error('Prix P3'); dailyGain = 2000; } // 5000F
-            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 5000; } // 10000F
+            else if (productType === 'prod3') { if (amount !== 5000) throw new Error('Prix P3'); dailyGain = 2000; }
+            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 5000; }
+            // NOUVEAUX PRODUITS AJOUTÉS ICI
+            else if (productType === 'prod5') { if (amount !== 15000) throw new Error('Prix P5 (15000F requis).'); dailyGain = 6000; }
+            else if (productType === 'prod6') { if (amount !== 20000) throw new Error('Prix P6 (20000F requis).'); dailyGain = 8000; }
+            else if (productType === 'prod7') { if (amount !== 30000) throw new Error('Prix P7 (30000F requis).'); dailyGain = 12000; }
+            else if (productType === 'prod8') { if (amount !== 40000) throw new Error('Prix P8 (40000F requis).'); dailyGain = 16000; }
             else throw new Error('Produit inconnu');
 
             const unlockDate = new Date(); 
@@ -285,7 +289,6 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
         const user = req.user;
         const invoiceNumber = `DXP_${Date.now()}`;
         
-        // Payload pour Sendavapay (À adapter selon leur doc exacte si nécessaire)
         const postData = {
             amount: parseInt(amount),
             currency: "XOF",
@@ -298,7 +301,7 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
             merchant_id: process.env.SENDAVA_MERCHANT_ID
         };
 
-        // URL API Sendavapay (Vérifiez dans leur documentation)
+        // URL API Sendavapay (À vérifier dans leur doc si différente)
         const SENDAVA_API_URL = 'https://api.sendavapay.com/v1/charge'; 
 
         const response = await axios.post(SENDAVA_API_URL, postData, {
@@ -337,7 +340,7 @@ app.post('/api/webhook/deposit', async (req, res) => {
     try {
         const data = req.body;
         
-        // Vérifier le statut (adapter selon la réponse Sendavapay : 'SUCCESS', 'completed', etc.)
+        // Adapter le statut selon la réponse Sendavapay ('SUCCESS', 'completed', etc.)
         if (data.status === 'SUCCESS' || data.event === 'completed') {
             const invoiceNumber = data.reference || data.invoice_number;
             const amount = parseFloat(data.amount || data.total_amount);
