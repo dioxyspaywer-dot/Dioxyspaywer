@@ -156,7 +156,7 @@ app.post('/api/login', async (req, res) => {
                          user.withdrawalBalance = (user.withdrawalBalance || 0) + user.longTermAccumulatedGains;
                          await Transaction.create({ 
                             userId: user._id, type: 'GAIN_TRANSFER', amount: user.longTermAccumulatedGains, 
-                            status: 'SUCCESS', reference: `LT_END_${Date.now()}`, description: 'Fin Long Terme' 
+                            status: 'SUCCESS', reference: `LT_END_${Date.now()}`, description: 'Fin Long Terme (70j)' 
                          });
                          user.longTermAccumulatedGains = 0;
                          user.longTermFinished = true; // Marquer comme fini
