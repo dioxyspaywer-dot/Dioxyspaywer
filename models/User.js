@@ -1,25 +1,31 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+    // --- INFORMATIONS UTILISATEUR ---
     fullName: { type: String, required: true },
     phone: { type: String, required: true, unique: true },
     country: { type: String, required: true },
     password: { type: String, required: true },
-    role: { type: String, default: 'user' },
+    role: { type: String, default: 'user' }, // 'user' ou 'admin'
     
-    balance: { type: Number, default: 0 },
+    // --- SOLDES ---
+    balance: { type: Number, default: 0 }, // Solde DÉPÔT (pour acheter des produits)
+    withdrawalBalance: { type: Number, default: 0 }, // Solde RETRAITE (gains libérés uniquement)
     
-    // --- PRODUITS ---
+    // --- PRODUIT LONG TERME ---
     hasLongTerm: { type: Boolean, default: false },
     longTermStartDate: { type: Date },
+    longTermAccumulatedGains: { type: Number, default: 0 }, // ✅ Gains accumulés LT
+    longTermFinished: { type: Boolean, default: false },   // ✅ Indicateur de fin de cycle (pour éviter double transfert)
     
-    // ✅ CORRECTION ICI : On définit explicitement la structure des objets
+    // --- PRODUITS COURTS TERMES ---
     shortTermProducts: [{
-        type: { type: String, required: true },      // ex: 'prod1'
-        amount: { type: Number, required: true },    // ex: 2000
-        dailyGain: { type: Number, required: true }, // ex: 1000
-        startDate: { type: Date, required: true },
-        unlockDate: { type: Date, required: true }
+        type: { type: String, required: true },      // ex: 'prod1', 'prod2'...
+        amount: { type: Number, required: true },    // Capital investi
+        dailyGain: { type: Number, required: true }, // Gain par jour
+        startDate: { type: Date, required: true },   // Date de début
+        unlockDate: { type: Date, required: true },  // Date de fin (J+5)
+        accumulatedGains: { type: Number, default: 0 } // ✅ Gains accumulés CT
     }],
     
     // --- PARRAINAGE ---
@@ -28,21 +34,20 @@ const userSchema = new mongoose.Schema({
     referralCount: { type: Number, default: 0 },
     referralEarnings: { type: Number, default: 0 },
     
-    // --- LIMITES ---
+    // --- LIMITES D'ACHAT ---
     monthlyPurchasesCount: { type: Number, default: 0 },
     lastPurchaseMonth: { type: String },
     
-    // --- RETRAITS ---
+    // --- GESTION DES RETRAITS ---
     lastWithdrawDate: { type: Date },
     
-    // --- STATUT ---
+    // --- STATUT DU COMPTE ---
     isActive: { type: Boolean, default: true }
 }, { 
-    timestamps: true,
-    strict: true // On garde strict true car on a défini le schéma ci-dessus
+    timestamps: true // Ajoute automatiquement createdAt et updatedAt
 });
 
-// Génération automatique du code parrainage
+// Génération automatique d'un code parrainage unique avant la première sauvegarde
 userSchema.pre('save', function(next) {
     if (!this.referralCode) {
         this.referralCode = Math.floor(1000 + Math.random() * 9000) + '-' + 
