@@ -120,36 +120,18 @@
 
         <!-- 2. PRODUITS (ACHATS) -->
         <div id="section-products" class="hidden">
-    <h3> Boutique d'Investissement</h3>
-    
-    <!-- SÉLECTION PRODUIT LONG TERME (OBLIGATOIRE) -->
-    <div class="card" id="lt-card-shop" style="border-left-color: #ff4b4b;">
-        <h4> ️ Choisissez votre Produit Long Terme (Obligatoire)</h4>
-        <p>Durée : 70 jours | Accès aux produits courts termes débloqué</p>
-        
-        <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px;">
-            <button onclick="invest('lt_2000', 2000)" style="background:#4CAF50; color:white;">
-                Option 1 : 2000 FCFA → 700 FCFA/j (Total: 49 000 FCFA)
-            </button>
-            <button onclick="invest('lt_5000', 5000)" style="background:#2196F3; color:white;">
-                Option 2 : 5000 FCFA → 950 FCFA/j (Total: 66 500 FCFA)
-            </button>
-            <button onclick="invest('lt_10000', 10000)" style="background:#FF9800; color:white;">
-                Option 3 : 10000 FCFA → 1250 FCFA/j (Total: 87 500 FCFA)
-            </button>
-            <button onclick="invest('lt_15000', 15000)" style="background:#9C27B0; color:white;">
-                Option 4 : 15000 FCFA → 1800 FCFA/j (Total: 126 000 FCFA)
-            </button>
-        </div>
-        <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center; font-weight:bold; margin-top:10px;">✅ Produit Long Terme déjà actif</p>
-    </div>
-    
-    <!-- PRODUITS COURTS TERMES (Reste identique) -->
-    <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
-    <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Durée 5 jours)</p>
-    <!-- ... Gardez vos 8 produits courts termes ici ... -->
-    <!-- (Je ne les réécris pas pour gagner de la place, gardez votre code actuel pour prod1 à prod8) -->
-        </div>
+            <h3> Boutique d'Investissement</h3>
+            
+            <!-- PRODUIT LONG TERME UNIQUE -->
+            <div class="card" id="lt-card-shop">
+                <h4> Produit Long Terme (Obligatoire)</h4>
+                <p>2000 FCFA → 700 FCFA/jour (70 jours)</p>
+                <button id="btn-buy-lt-shop" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
+                <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center;">✅ Déjà acheté</p>
+            </div>
+            
+            <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
+            <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Durée 5 jours)</p>
 
             <!-- PRODUIT 1 -->
             <div class="card">
@@ -179,28 +161,28 @@
                 <button onclick="invest('prod4', 10000)">Investir</button>
             </div>
 
-            <!-- PRODUIT 5 (NOUVEAU) -->
+            <!-- PRODUIT 5 -->
             <div class="card">
                 <p><strong>Produit 5:</strong> 15000 FCFA → <span style="color:#00e676">6000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 30000 FCFA</small>
                 <button onclick="invest('prod5', 15000)">Investir</button>
             </div>
 
-            <!-- PRODUIT 6 (NOUVEAU) -->
+            <!-- PRODUIT 6 -->
             <div class="card">
                 <p><strong>Produit 6:</strong> 20000 FCFA → <span style="color:#00e676">8000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 40000 FCFA</small>
                 <button onclick="invest('prod6', 20000)">Investir</button>
             </div>
 
-            <!-- PRODUIT 7 (NOUVEAU) -->
+            <!-- PRODUIT 7 -->
             <div class="card">
                 <p><strong>Produit 7:</strong> 30000 FCFA → <span style="color:#00e676">12000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 60000 FCFA</small>
                 <button onclick="invest('prod7', 30000)">Investir</button>
             </div>
 
-            <!-- PRODUIT 8 (NOUVEAU) -->
+            <!-- PRODUIT 8 -->
             <div class="card">
                 <p><strong>Produit 8:</strong> 40000 FCFA → <span style="color:#00e676">16000 FCFA/j</span></p>
                 <small style="color:#aaa;">Total gains: 80000 FCFA</small>
@@ -245,7 +227,7 @@
                     <option value="" disabled selected>Opérateur</option>
                     <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
                     <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
-                    <optgroup label="🇯 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
+                    <optgroup label="🇧 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button class="secondary" onclick="deposit()">Déposer</button>
             </div>
@@ -256,7 +238,7 @@
                 <select id="wit-network">
                     <option value="" disabled selected>Opérateur</option>
                     <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
-                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
+                    <optgroup label="🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
                     <optgroup label="🇧 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button onclick="withdraw()">Retirer</button>
@@ -281,11 +263,11 @@
     <!-- BARRE DE NAVIGATION (6 OPTIONS) -->
     <div class="bottom-nav">
         <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon"></span><span>Tableau<br>de bord</span></div>
-        <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon">🛒</span><span>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon"></span><span>Mes<br>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon">👤</span><span>Compte</span></div>
+        <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon"></span><span>Produits</span></div>
+        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon">📦</span><span>Mes<br>Produits</span></div>
+        <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon"></span><span>Compte</span></div>
         <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Caisse</span></div>
-        <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon">📜</span><span>Historique</span></div>
+        <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon"></span><span>Historique</span></div>
     </div>
 
     <script>
@@ -339,86 +321,73 @@
         function copyReferralCode() { navigator.clipboard.writeText(document.getElementById('my-referral-code').innerText).then(() => alert('Copié !')); }
 
         function calculateWithdrawBalance() {
-            let withdrawableAmount = 0;
-            const now = new Date();
-            if (userData.shortTermProducts && userData.shortTermProducts.length > 0) {
-                userData.shortTermProducts.forEach(prod => {
-                    const unlockDate = new Date(prod.unlockDate);
-                    if (unlockDate <= now) {
-                        const totalGains = prod.dailyGain * 5; 
-                        withdrawableAmount += (prod.amount + totalGains);
-                    }
-                });
-            }
-            if (userData.hasLongTerm && userData.longTermStartDate) {
-                const startDate = new Date(userData.longTermStartDate);
-                const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-                if (daysPassed >= 55) withdrawableAmount += (700 * 55);
-                else if (daysPassed > 0) withdrawableAmount += (700 * daysPassed);
-            }
-            return withdrawableAmount;
+            // Cette fonction est maintenant gérée côté serveur dans /api/login via withdrawalBalance
+            // Mais on la garde pour cohérence si besoin local
+            return userData.withdrawalBalance || 0;
         }
 
         function renderMyProducts() {
-    const container = document.getElementById('my-products-list');
-    container.innerHTML = '';
-    let hasProducts = false;
-    const now = new Date();
+            const container = document.getElementById('my-products-list');
+            container.innerHTML = '';
+            let hasProducts = false;
+            const now = new Date();
 
-    // --- PRODUIT LONG TERME (NOUVELLE LOGIQUE) ---
-    if (userData.hasLongTerm && userData.longTermProduct) {
-        hasProducts = true;
-        const prod = userData.longTermProduct;
-        const startDate = new Date(prod.startDate);
-        const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-        const daysLeft = Math.max(0, 70 - daysPassed);
-        const gains = prod.accumulatedGains || 0;
-        
-        let colorClass = '#ffd700';
-        if (prod.finished) colorClass = '#00e676';
+            // --- PRODUIT LONG TERME (UNIQUE) ---
+            if (userData.hasLongTerm) {
+                hasProducts = true;
+                // Calcul basé sur longTermStartDate et durée fixe de 70 jours
+                const startDate = new Date(userData.longTermStartDate);
+                const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
+                const daysLeft = Math.max(0, 70 - daysPassed);
+                
+                // Récupération des gains accumulés depuis le serveur
+                const gains = userData.longTermAccumulatedGains || 0;
+                
+                const isFinished = daysPassed >= 70;
 
-        container.innerHTML += `
-            <div class="card active-product" style="border-left-color: ${colorClass}">
-                <h4>⭐ Long Terme (${prod.type.replace('lt_', '')} FCFA)</h4>
-                <p>Gain/jour: ${prod.dailyGain} FCFA</p>
-                <div class="product-status"> ${daysLeft} jours restants (sur 70)</div>
-                <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
-                ${prod.finished ? '<div style="color:#00e676; font-weight:bold;">✅ Terminé (Gains transférés)</div>' : ''}
-            </div>`;
-    }
+                container.innerHTML += `
+                    <div class="card active-product" style="border-left-color: ${isFinished ? '#00e676' : '#ffd700'}">
+                        <h4>⭐ Long Terme</h4>
+                        <p>Gain/jour: 700 FCFA</p>
+                        <div class="product-status"> ${daysLeft} jours restants (sur 70)</div>
+                        <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
+                        ${isFinished ? '<div style="color:#00e676; font-weight:bold;">✅ Terminé (Gains transférés)</div>' : ''}
+                    </div>`;
+            }
 
-    // --- PRODUITS COURTS TERMES (Identique) ---
-    if (userData.shortTermProducts) {
-        userData.shortTermProducts.forEach(prod => {
-            hasProducts = true;
-            const unlockDate = new Date(prod.unlockDate);
-            const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
-            const isFinished = daysLeft <= 0;
-            
-            let name = "Court Terme";
-            if(prod.type === 'prod1') name = "Produit 1";
-            if(prod.type === 'prod2') name = "Produit 2";
-            if(prod.type === 'prod3') name = "Produit 3";
-            if(prod.type === 'prod4') name = "Produit 4";
-            if(prod.type === 'prod5') name = "Produit 5";
-            if(prod.type === 'prod6') name = "Produit 6";
-            if(prod.type === 'prod7') name = "Produit 7";
-            if(prod.type === 'prod8') name = "Produit 8";
-            
-            const gains = prod.accumulatedGains || 0;
+            // --- PRODUITS COURTS TERMES ---
+            if (userData.shortTermProducts) {
+                userData.shortTermProducts.forEach(prod => {
+                    hasProducts = true;
+                    const unlockDate = new Date(prod.unlockDate);
+                    const daysLeft = Math.ceil((unlockDate - now) / (1000 * 60 * 60 * 24));
+                    const isFinished = daysLeft <= 0;
+                    
+                    let name = "Court Terme";
+                    if(prod.type === 'prod1') name = "Produit 1";
+                    if(prod.type === 'prod2') name = "Produit 2";
+                    if(prod.type === 'prod3') name = "Produit 3";
+                    if(prod.type === 'prod4') name = "Produit 4";
+                    if(prod.type === 'prod5') name = "Produit 5";
+                    if(prod.type === 'prod6') name = "Produit 6";
+                    if(prod.type === 'prod7') name = "Produit 7";
+                    if(prod.type === 'prod8') name = "Produit 8";
+                    
+                    const gains = prod.accumulatedGains || 0;
 
-            container.innerHTML += `
-                <div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}">
-                    <h4>${name}</h4>
-                    <p>Gain/jour: ${prod.dailyGain} FCFA</p>
-                    <div class="product-status">${isFinished?'✅ Terminé (Gains transférés)':' '+daysLeft+' jours restants'}</div>
-                    <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
-                </div>`;
-        });
-     }
+                    container.innerHTML += `
+                        <div class="card" style="border-left-color:${isFinished?'#00e676':'#ff9800'}">
+                            <h4>${name}</h4>
+                            <p>Gain/jour: ${prod.dailyGain} FCFA</p>
+                            <div class="product-status">${isFinished?'✅ Terminé (Gains transférés)':' '+daysLeft+' jours restants'}</div>
+                            <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
+                        </div>`;
+                });
+            }
 
-    if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
-  }
+            if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
+        }
+
         function renderHistory() {
             const container = document.getElementById('history-list');
             container.innerHTML = '';
@@ -461,59 +430,37 @@
         }
 
         function loadDashboard() {
-    // Afficher le contenu principal et cacher l'authentification
-    document.getElementById('auth-container').classList.add('hidden');
-    document.getElementById('main-content').classList.remove('hidden');
-    
-    // Initialiser sur l'onglet Tableau de bord
-    switchTab('dashboard');
-
-    // Mise à jour des informations personnelles
-    document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
-    document.getElementById('acc-name').innerText = userData.fullName;
-    document.getElementById('acc-phone').innerText = userData.phone;
-    document.getElementById('acc-country').innerText = userData.country;
-    document.getElementById('acc-ref-count').innerText = userData.referralCount || 0;
-    document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
-    
-    // --- MISE À JOUR DES SOLDES ---
-    
-    // 1. Solde DÉPÔT (Pour investir)
-    const depositBal = userData.balance || 0;
-    document.getElementById('deposit-balance').innerText = depositBal;
-    
-    // 2. Solde RETRAITE (Gains libérés uniquement)
-    // On utilise le nouveau champ 'withdrawalBalance' envoyé par le serveur
-    const withdrawBal = userData.withdrawalBalance || 0;
-    document.getElementById('withdraw-balance').innerText = withdrawBal;
-    
-    // Affichage du code parrainage
-    if (userData.referralCode) {
-        document.getElementById('my-referral-code').innerText = userData.referralCode;
-    }
-
-    // Gestion de l'affichage du bouton Long Terme (Caché si déjà acheté)
-    if (userData.hasLongTerm) { 
-        document.getElementById('btn-buy-lt-shop').style.display = 'none'; 
-        document.getElementById('lt-status-shop').style.display = 'block'; 
-    }
-    
-    // --- AFFICHAGE DES PRODUITS ET GAINS ---
-    
-    // Appel de la fonction mise à jour qui affiche les "Gains accumulés"
-    renderMyProducts();
-    
-    // Affichage de l'historique des transactions
-    renderHistory();
-    
-    // Section Admin (si applicable)
-    if (userData.role === 'admin') { 
-        document.getElementById('admin-section').style.display = 'block'; 
-        loadAdminData(); 
-    }
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            switchTab('dashboard');
+            document.getElementById('user-welcome').innerText = `Bonjour, ${userData.fullName}`;
+            document.getElementById('acc-name').innerText = userData.fullName;
+            document.getElementById('acc-phone').innerText = userData.phone;
+            document.getElementById('acc-country').innerText = userData.country;
+            document.getElementById('acc-ref-count').innerText = userData.referralCount || 0;
+            document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
+            
+            const depositBal = userData.balance || 0;
+            // Utilisation du nouveau champ withdrawalBalance envoyé par le serveur
+            const withdrawBal = userData.withdrawalBalance || 0;
+            
+            document.getElementById('deposit-balance').innerText = depositBal;
+            document.getElementById('withdraw-balance').innerText = withdrawBal;
+            
+            if (userData.referralCode) document.getElementById('my-referral-code').innerText = userData.referralCode;
+            
+            // Gestion affichage bouton Long Terme
+            if (userData.hasLongTerm) { 
+                document.getElementById('btn-buy-lt-shop').style.display = 'none'; 
+                document.getElementById('lt-status-shop').style.display = 'block'; 
+            }
+            
+            renderMyProducts();
+            renderHistory();
+            
+            if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
         }
 
-        // --- FONCTION INVESTISSEMENT MISE À JOUR POUR 8 PRODUITS ---
         async function invest(type, amount) {
             console.log(" Début investissement :", type, amount);
 
@@ -545,7 +492,7 @@
 
             } catch (error) {
                 console.error(" Erreur:", error);
-                alert("❌ Problème de connexion.");
+                alert(" Problème de connexion.");
             }
         }
 
@@ -553,53 +500,70 @@
             const phone = document.getElementById('dep-phone').value;
             const amount = document.getElementById('dep-amount').value;
             const network = document.getElementById('dep-network').value;
-            if(!phone || phone.length < 8) { alert("Numéro invalide"); return; }
-            if(!amount || amount < 2000) { alert("Min 2000 FCFA"); return; }
-            if(network === "") { alert("Choisissez un opérateur"); return; }
-            const res = await fetch(`${API_URL}/deposit`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone }) });
-            const data = await res.json();
-            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
-            if (data.success && data.paymentUrl) { window.location.href = data.paymentUrl; } else { alert(data.message || data.error); }
-        }
+            ifC'est noté ! Nous revenons à la configuration précédente : **un seul Produit Long Terme** (2000 FCFA, 700 FCFA/jour, 70 jours) et les 8 Produits Courts Termes.
 
-        async function withdraw() {
-            const phone = document.getElementById('wit-phone').value;
-            const amount = parseFloat(document.getElementById('wit-amount').value);
-            const network = document.getElementById('wit-network').value;
-            const currentWithdrawBalance = calculateWithdrawBalance();
+Voici les codes complets et nettoyés pour `models/User.js` et `public/index.html`.
 
-            if(!phone || phone.length < 8) { alert("Numéro invalide"); return; }
-            if(network === "") { alert("Choisissez un opérateur"); return; }
-            if(!amount || amount < 1000) { alert("Min 1000 FCFA"); return; }
-            
-            if (amount > currentWithdrawBalance) {
-                alert(`Solde insuffisant dans RETRAITE. Disponible: ${currentWithdrawBalance} FCFA`);
-                return;
-            }
-            
-            const res = await fetch(`${API_URL}/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone }) });
-            const data = await res.json();
-            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
-            alert(data.message || data.error);
-            if(data.success) { location.reload(); }
-        }
+### 1️⃣ Fichier : `models/User.js`
+Ce modèle est simplifié pour gérer un seul produit Long Terme standard.
 
-        async function loadAdminData() {
-            const res = await fetch(`${API_URL}/admin/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
-            const data = await res.json();
-            if(data.users) document.getElementById('vault-total').innerText = data.totalVault;
-        }
+```javascript
+const mongoose = require('mongoose');
 
-        async function emergencyStop() {
-            if(!confirm("ATTENTION : Cela va afficher une CROIX et vider les comptes ! Êtes-vous sûr ?")) return;
-            const res = await fetch(`${API_URL}/admin/emergency-stop`, { method: 'POST', headers: {'Authorization': `Bearer ${token}`} });
-            const data = await res.json();
-            alert(data.message);
-            if(data.success) showClosedScreen();
-        }
+const userSchema = new mongoose.Schema({
+    // --- INFORMATIONS UTILISATEUR ---
+    fullName: { type: String, required: true },
+    phone: { type: String, required: true, unique: true },
+    country: { type: String, required: true },
+    password: { type: String, required: true },
+    role: { type: String, default: 'user' }, // 'user' ou 'admin'
+    
+    // --- SOLDES ---
+    balance: { type: Number, default: 0 }, // Solde DÉPÔT (pour acheter des produits)
+    withdrawalBalance: { type: Number, default: 0 }, // Solde RETRAITE (gains libérés uniquement)
+    
+    // --- PRODUIT LONG TERME (UNIQUE : 2000F) ---
+    hasLongTerm: { type: Boolean, default: false },
+    longTermStartDate: { type: Date },
+    longTermAccumulatedGains: { type: Number, default: 0 }, // Gains accumulés LT
+    longTermFinished: { type: Boolean, default: false },   // Indicateur de fin de cycle
+    
+    // --- PRODUITS COURTS TERMES ---
+    shortTermProducts: [{
+        type: { type: String, required: true },      // ex: 'prod1', 'prod2'...
+        amount: { type: Number, required: true },    // Capital investi
+        dailyGain: { type: Number, required: true }, // Gain par jour
+        startDate: { type: Date, required: true },   // Date de début
+        unlockDate: { type: Date, required: true },  // Date de fin (J+5)
+        accumulatedGains: { type: Number, default: 0 } // Gains accumulés CT
+    }],
+    
+    // --- PARRAINAGE ---
+    referralCode: { type: String, unique: true, sparse: true },
+    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    referralCount: { type: Number, default: 0 },
+    referralEarnings: { type: Number, default: 0 },
+    
+    // --- LIMITES D'ACHAT ---
+    monthlyPurchasesCount: { type: Number, default: 0 },
+    lastPurchaseMonth: { type: String },
+    
+    // --- GESTION DES RETRAITS ---
+    lastWithdrawDate: { type: Date },
+    
+    // --- STATUT DU COMPTE ---
+    isActive: { type: Boolean, default: true }
+}, { 
+    timestamps: true // Ajoute automatiquement createdAt et updatedAt
+});
 
-        checkSiteStatus();
-        if (token && userData) loadDashboard();
-    </script>
-</body>
-                    </html>
+// Génération automatique d'un code parrainage unique avant la première sauvegarde
+userSchema.pre('save', function(next) {
+    if (!this.referralCode) {
+        this.referralCode = Math.floor(1000 + Math.random() * 9000) + '-' + 
+                           Math.random().toString(36).substring(2, 6).toUpperCase();
+    }
+    next();
+});
+
+module.exports = mongoose.model('User', userSchema);
