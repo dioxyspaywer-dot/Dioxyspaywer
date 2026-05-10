@@ -38,7 +38,6 @@
         .product-status { font-size: 0.8rem; color: #aaa; margin-top: 5px; }
         .active-product { border-left-color: #00e676 !important; }
 
-        /* Styles pour l'historique */
         .history-item {
             background: rgba(255,255,255,0.05);
             padding: 10px;
@@ -226,7 +225,7 @@
                 <select id="dep-network">
                     <option value="" disabled selected>Opérateur</option>
                     <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
-                    <optgroup label="🇨🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
+                    <optgroup label="🇨 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
                     <optgroup label="🇧 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button class="secondary" onclick="deposit()">Déposer</button>
@@ -260,7 +259,7 @@
         </div>
     </div>
 
-    <!-- BARRE DE NAVIGATION (6 OPTIONS) -->
+    <!-- BARRE DE NAVIGATION -->
     <div class="bottom-nav">
         <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon"></span><span>Tableau<br>de bord</span></div>
         <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon"></span><span>Produits</span></div>
@@ -320,29 +319,19 @@
         function logout() { localStorage.clear(); location.reload(); }
         function copyReferralCode() { navigator.clipboard.writeText(document.getElementById('my-referral-code').innerText).then(() => alert('Copié !')); }
 
-        function calculateWithdrawBalance() {
-            // Cette fonction est maintenant gérée côté serveur dans /api/login via withdrawalBalance
-            // Mais on la garde pour cohérence si besoin local
-            return userData.withdrawalBalance || 0;
-        }
-
         function renderMyProducts() {
             const container = document.getElementById('my-products-list');
             container.innerHTML = '';
             let hasProducts = false;
             const now = new Date();
 
-            // --- PRODUIT LONG TERME (UNIQUE) ---
+            // --- PRODUIT LONG TERME ---
             if (userData.hasLongTerm) {
                 hasProducts = true;
-                // Calcul basé sur longTermStartDate et durée fixe de 70 jours
                 const startDate = new Date(userData.longTermStartDate);
                 const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
                 const daysLeft = Math.max(0, 70 - daysPassed);
-                
-                // Récupération des gains accumulés depuis le serveur
                 const gains = userData.longTermAccumulatedGains || 0;
-                
                 const isFinished = daysPassed >= 70;
 
                 container.innerHTML += `
@@ -441,15 +430,12 @@
             document.getElementById('acc-ref-earnings').innerText = userData.referralEarnings || 0;
             
             const depositBal = userData.balance || 0;
-            // Utilisation du nouveau champ withdrawalBalance envoyé par le serveur
             const withdrawBal = userData.withdrawalBalance || 0;
             
             document.getElementById('deposit-balance').innerText = depositBal;
             document.getElementById('withdraw-balance').innerText = withdrawBal;
             
             if (userData.referralCode) document.getElementById('my-referral-code').innerText = userData.referralCode;
-            
-            // Gestion affichage bouton Long Terme
             if (userData.hasLongTerm) { 
                 document.getElementById('btn-buy-lt-shop').style.display = 'none'; 
                 document.getElementById('lt-status-shop').style.display = 'block'; 
@@ -462,36 +448,25 @@
         }
 
         async function invest(type, amount) {
-            console.log(" Début investissement :", type, amount);
-
             if (!userData || userData.balance < amount) {
-                alert("❌ Solde insuffisant ! Vous avez " + (userData.balance || 0) + " FCFA.");
+                alert("❌ Solde insuffisant !");
                 return;
             }
-
             try {
                 const response = await fetch(`${API_URL}/invest`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                     body: JSON.stringify({ productType: type, amount: parseInt(amount) })
                 });
-
                 const data = await response.json();
-                console.log(" Réponse serveur:", data);
-
                 if (data.success) {
-                    alert("✅ Investissement réussi ! Mise à jour...");
+                    alert("✅ Investissement réussi !");
                     localStorage.removeItem('userData');
                     location.reload();
                 } else {
-                    alert("❌ Échec : " + (data.error || "Erreur inconnue"));
+                    alert("❌ Échec : " + (data.error || "Erreur"));
                 }
-
             } catch (error) {
-                console.error(" Erreur:", error);
                 alert(" Problème de connexion.");
             }
         }
