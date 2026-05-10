@@ -117,8 +117,8 @@ app.post('/api/login', async (req, res) => {
             const startDate = new Date(user.longTermStartDate);
             const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
             
-            // Calcul du gain théorique total (max 55 jours)
-            const daysToCount = daysPassed > 55 ? 55 : (daysPassed < 0 ? 0 : daysPassed);
+            // Calcul du gain théorique total (max 70 jours)
+            const daysToCount = daysPassed > 70 ? 70 : (daysPassed < 0 ? 0 : daysPassed);
             const expectedTotalGains = daysToCount * 700;
             
             // Si les gains enregistrés sont inférieurs, on met à jour
@@ -127,11 +127,11 @@ app.post('/api/login', async (req, res) => {
                 needsSave = true;
             }
 
-            // Si le produit est terminé (55 jours), on transfère vers withdrawalBalance
-            if (daysPassed >= 55) {
+            // Si le produit est terminé (70 jours), on transfère vers withdrawalBalance
+            if (daysPassed >= 70) {
                 // On vérifie si le transfert a déjà été fait pour éviter les doublons
                 // Une méthode simple est de vérifier si withdrawalBalance contient déjà ces gains ou d'utiliser un flag
-                // Ici, on suppose que si accumulatedGains > 0 et jours >= 55, on transfère une fois
+                // Ici, on suppose que si accumulatedGains > 0 et jours >= 70, on transfère une fois
                 // Pour simplifier, on utilise une logique de transfert immédiat si le seuil est atteint
                 // Note: Dans un système réel, il faudrait un champ 'isTransferred' pour éviter de re-transférer à chaque login
                 // Mais ici, on va supposer que l'utilisateur retire ou que le système gère le flux.
@@ -148,8 +148,8 @@ app.post('/api/login', async (req, res) => {
                 if (user.longTermAccumulatedGains > 0) {
                      // Vérifions si on a déjà transféré (astuce: si withdrawalBalance est très grand, peut-être oui, mais pas fiable)
                      // Pour cet exercice, nous allons considérer que le transfert se fait quand l'utilisateur clique sur "Retirer" ou via un Cron dédié.
-                     // MAIS, pour respecter votre demande stricte : "après 55 jours rediriger vers retrait".
-                     // Nous allons ajouter un petit hack: si jours >= 55, on ajoute au withdrawalBalance et on reset accumulatedGains à 0 UNE FOIS.
+                     // MAIS, pour respecter votre demande stricte : "après 70 jours rediriger vers retrait".
+                     // Nous allons ajouter un petit hack: si jours >= 70, on ajoute au withdrawalBalance et on reset accumulatedGains à 0 UNE FOIS.
                      // Pour gérer le "UNE FOIS", nous avons besoin d'un champ 'longTermFinished' dans le modèle.
                      // Ajoutons-le dynamiquement si absent.
                      if (!user.longTermFinished) {
