@@ -500,18 +500,30 @@
             }
             
             const res = await fetch(`${API_URL}/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone }) });
-            const data = await res.json();
+            const data = await res.json();7
             if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
             alert(data.message || data.error);
             if(data.success) { location.reload(); }
         }
 
         async function loadAdminData() {
-            const res = await fetch(`${API_URL}/admin/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
-            const data = await res.json();
-            if(data.users) document.getElementById('vault-total').innerText = data.totalVault;
-        }
+            <!-- ADMIN -->
+<div id="admin-section">
+    <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
+    <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
+    
+    <!-- NOUVEAU BOUTON DE CONTRÔLE PRODUITS COURTS TERMES -->
+    <div class="card" style="border-left-color: #2196F3; margin-top: 20px;">
+        <h4>Gestion Produits Courts Termes</h4>
+        <p id="shortterm-status-text" style="font-weight:bold;">État actuel : Chargement...</p>
+        <button id="btn-toggle-shortterm" onclick="toggleShortTermProducts()" style="background:#2196F3; color:white; margin-top:10px;">
+            Basculer Disponibilité (Activer/Désactiver)
+        </button>
+    </div>
+    <!-- FIN DU NOUVEAU BLOC -->
 
+    <button class="danger" onclick="emergencyStop()" style="margin-top:20px;">⚠️ DÉSACTIVER LE SITE (URGENCE)</button>
+</div>
         async function emergencyStop() {
             if(!confirm("ATTENTION : Cela va afficher une CROIX et vider les comptes ! Êtes-vous sûr ?")) return;
             const res = await fetch(`${API_URL}/admin/emergency-stop`, { method: 'POST', headers: {'Authorization': `Bearer ${token}`} });
