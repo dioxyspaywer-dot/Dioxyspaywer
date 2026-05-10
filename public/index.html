@@ -120,16 +120,36 @@
 
         <!-- 2. PRODUITS (ACHATS) -->
         <div id="section-products" class="hidden">
-            <h3> Boutique d'Investissement</h3>
-            <div class="card" id="lt-card-shop">
-                <h4> Produit Long Terme (Obligatoire)</h4>
-                <p>2000 FCFA → 700 FCFA/jour (70 jours)</p>
-                <button id="btn-buy-lt-shop" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
-                <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center;">✅ Déjà acheté</p>
-            </div>
-            
-            <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
-            <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Durée 5 jours)</p>
+    <h3> Boutique d'Investissement</h3>
+    
+    <!-- SÉLECTION PRODUIT LONG TERME (OBLIGATOIRE) -->
+    <div class="card" id="lt-card-shop" style="border-left-color: #ff4b4b;">
+        <h4> ️ Choisissez votre Produit Long Terme (Obligatoire)</h4>
+        <p>Durée : 70 jours | Accès aux produits courts termes débloqué</p>
+        
+        <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 15px;">
+            <button onclick="invest('lt_2000', 2000)" style="background:#4CAF50; color:white;">
+                Option 1 : 2000 FCFA → 700 FCFA/j (Total: 49 000 FCFA)
+            </button>
+            <button onclick="invest('lt_5000', 5000)" style="background:#2196F3; color:white;">
+                Option 2 : 5000 FCFA → 950 FCFA/j (Total: 66 500 FCFA)
+            </button>
+            <button onclick="invest('lt_10000', 10000)" style="background:#FF9800; color:white;">
+                Option 3 : 10000 FCFA → 1250 FCFA/j (Total: 87 500 FCFA)
+            </button>
+            <button onclick="invest('lt_15000', 15000)" style="background:#9C27B0; color:white;">
+                Option 4 : 15000 FCFA → 1800 FCFA/j (Total: 126 000 FCFA)
+            </button>
+        </div>
+        <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center; font-weight:bold; margin-top:10px;">✅ Produit Long Terme déjà actif</p>
+    </div>
+    
+    <!-- PRODUITS COURTS TERMES (Reste identique) -->
+    <h4 style="text-align:center; margin-top:30px;">Produits Courts Termes</h4>
+    <p style="text-align:center; font-size:0.8rem; color:#aaa;">(Limité à 2 achats/mois - Durée 5 jours)</p>
+    <!-- ... Gardez vos 8 produits courts termes ici ... -->
+    <!-- (Je ne les réécris pas pour gagner de la place, gardez votre code actuel pour prod1 à prod8) -->
+        </div>
 
             <!-- PRODUIT 1 -->
             <div class="card">
@@ -345,23 +365,29 @@
     let hasProducts = false;
     const now = new Date();
 
-    // --- PRODUIT LONG TERME ---
-    if (userData.hasLongTerm) {
+    // --- PRODUIT LONG TERME (NOUVELLE LOGIQUE) ---
+    if (userData.hasLongTerm && userData.longTermProduct) {
         hasProducts = true;
-        const daysPassed = Math.floor((now - new Date(userData.longTermStartDate)) / (1000 * 60 * 60 * 24));
+        const prod = userData.longTermProduct;
+        const startDate = new Date(prod.startDate);
+        const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
         const daysLeft = Math.max(0, 70 - daysPassed);
-        const gains = userData.longTermAccumulatedGains || 0;
+        const gains = prod.accumulatedGains || 0;
         
+        let colorClass = '#ffd700';
+        if (prod.finished) colorClass = '#00e676';
+
         container.innerHTML += `
-            <div class="card active-product">
-                <h4>⭐ Long Terme</h4>
-                <p>Gain/jour: 700 FCFA</p>
-                <div class="product-status">⏳ ${daysLeft} jours restants</div>
+            <div class="card active-product" style="border-left-color: ${colorClass}">
+                <h4>⭐ Long Terme (${prod.type.replace('lt_', '')} FCFA)</h4>
+                <p>Gain/jour: ${prod.dailyGain} FCFA</p>
+                <div class="product-status"> ${daysLeft} jours restants (sur 70)</div>
                 <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
+                ${prod.finished ? '<div style="color:#00e676; font-weight:bold;">✅ Terminé (Gains transférés)</div>' : ''}
             </div>`;
     }
 
-    // --- PRODUITS COURTS TERMES ---
+    // --- PRODUITS COURTS TERMES (Identique) ---
     if (userData.shortTermProducts) {
         userData.shortTermProducts.forEach(prod => {
             hasProducts = true;
@@ -389,10 +415,10 @@
                     <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
                 </div>`;
         });
-    }
+     }
 
     if (!hasProducts) container.innerHTML = '<p style="color:#aaa">Aucun produit actif.</p>';
-        }
+  }
         function renderHistory() {
             const container = document.getElementById('history-list');
             container.innerHTML = '';
