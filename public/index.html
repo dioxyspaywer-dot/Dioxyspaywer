@@ -123,7 +123,7 @@
             <h3> Boutique d'Investissement</h3>
             <div class="card" id="lt-card-shop">
                 <h4> Produit Long Terme (Obligatoire)</h4>
-                <p>2000 FCFA → 700 FCFA/jour (55 jours)</p>
+                <p>2000 FCFA → 700 FCFA/jour (70 jours)</p>
                 <button id="btn-buy-lt-shop" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
                 <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center;">✅ Déjà acheté</p>
             </div>
@@ -349,7 +349,7 @@
     if (userData.hasLongTerm) {
         hasProducts = true;
         const daysPassed = Math.floor((now - new Date(userData.longTermStartDate)) / (1000 * 60 * 60 * 24));
-        const daysLeft = Math.max(0, 55 - daysPassed);
+        const daysLeft = Math.max(0, 70 - daysPassed);
         const gains = userData.longTermAccumulatedGains || 0;
         
         container.innerHTML += `
