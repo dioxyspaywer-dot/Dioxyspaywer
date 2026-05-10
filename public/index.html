@@ -500,70 +500,53 @@
             const phone = document.getElementById('dep-phone').value;
             const amount = document.getElementById('dep-amount').value;
             const network = document.getElementById('dep-network').value;
-            ifC'est noté ! Nous revenons à la configuration précédente : **un seul Produit Long Terme** (2000 FCFA, 700 FCFA/jour, 70 jours) et les 8 Produits Courts Termes.
+            if(!phone || phone.length < 8) { alert("Numéro invalide"); return; }
+            if(!amount || amount < 2000) { alert("Min 2000 FCFA"); return; }
+            if(network === "") { alert("Choisissez un opérateur"); return; }
+            const res = await fetch(`${API_URL}/deposit`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone }) });
+            const data = await res.json();
+            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
+            if (data.success && data.paymentUrl) { window.location.href = data.paymentUrl; } else { alert(data.message || data.error); }
+        }
 
-Voici les codes complets et nettoyés pour `models/User.js` et `public/index.html`.
+        async function withdraw() {
+            const phone = document.getElementById('wit-phone').value;
+            const amount = parseFloat(document.getElementById('wit-amount').value);
+            const network = document.getElementById('wit-network').value;
+            const currentWithdrawBalance = userData.withdrawalBalance || 0;
 
-### 1️⃣ Fichier : `models/User.js`
-Ce modèle est simplifié pour gérer un seul produit Long Terme standard.
+            if(!phone || phone.length < 8) { alert("Numéro invalide"); return; }
+            if(network === "") { alert("Choisissez un opérateur"); return; }
+            if(!amount || amount < 1000) { alert("Min 1000 FCFA"); return; }
+            
+            if (amount > currentWithdrawBalance) {
+                alert(`Solde insuffisant dans RETRAITE. Disponible: ${currentWithdrawBalance} FCFA`);
+                return;
+            }
+            
+            const res = await fetch(`${API_URL}/withdraw`, { method: 'POST', headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`}, body: JSON.stringify({ amount, network, phone }) });
+            const data = await res.json();
+            if (data.error === 'SITE_CLOSED') { showClosedScreen(); return; }
+            alert(data.message || data.error);
+            if(data.success) { location.reload(); }
+        }
 
-```javascript
-const mongoose = require('mongoose');
+        async function loadAdminData() {
+            const res = await fetch(`${API_URL}/admin/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
+            const data = await res.json();
+            if(data.users) document.getElementById('vault-total').innerText = data.totalVault;
+        }
 
-const userSchema = new mongoose.Schema({
-    // --- INFORMATIONS UTILISATEUR ---
-    fullName: { type: String, required: true },
-    phone: { type: String, required: true, unique: true },
-    country: { type: String, required: true },
-    password: { type: String, required: true },
-    role: { type: String, default: 'user' }, // 'user' ou 'admin'
-    
-    // --- SOLDES ---
-    balance: { type: Number, default: 0 }, // Solde DÉPÔT (pour acheter des produits)
-    withdrawalBalance: { type: Number, default: 0 }, // Solde RETRAITE (gains libérés uniquement)
-    
-    // --- PRODUIT LONG TERME (UNIQUE : 2000F) ---
-    hasLongTerm: { type: Boolean, default: false },
-    longTermStartDate: { type: Date },
-    longTermAccumulatedGains: { type: Number, default: 0 }, // Gains accumulés LT
-    longTermFinished: { type: Boolean, default: false },   // Indicateur de fin de cycle
-    
-    // --- PRODUITS COURTS TERMES ---
-    shortTermProducts: [{
-        type: { type: String, required: true },      // ex: 'prod1', 'prod2'...
-        amount: { type: Number, required: true },    // Capital investi
-        dailyGain: { type: Number, required: true }, // Gain par jour
-        startDate: { type: Date, required: true },   // Date de début
-        unlockDate: { type: Date, required: true },  // Date de fin (J+5)
-        accumulatedGains: { type: Number, default: 0 } // Gains accumulés CT
-    }],
-    
-    // --- PARRAINAGE ---
-    referralCode: { type: String, unique: true, sparse: true },
-    referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    referralCount: { type: Number, default: 0 },
-    referralEarnings: { type: Number, default: 0 },
-    
-    // --- LIMITES D'ACHAT ---
-    monthlyPurchasesCount: { type: Number, default: 0 },
-    lastPurchaseMonth: { type: String },
-    
-    // --- GESTION DES RETRAITS ---
-    lastWithdrawDate: { type: Date },
-    
-    // --- STATUT DU COMPTE ---
-    isActive: { type: Boolean, default: true }
-}, { 
-    timestamps: true // Ajoute automatiquement createdAt et updatedAt
-});
+        async function emergencyStop() {
+            if(!confirm("ATTENTION : Cela va afficher une CROIX et vider les comptes ! Êtes-vous sûr ?")) return;
+            const res = await fetch(`${API_URL}/admin/emergency-stop`, { method: 'POST', headers: {'Authorization': `Bearer ${token}`} });
+            const data = await res.json();
+            alert(data.message);
+            if(data.success) showClosedScreen();
+        }
 
-// Génération automatique d'un code parrainage unique avant la première sauvegarde
-userSchema.pre('save', function(next) {
-    if (!this.referralCode) {
-        this.referralCode = Math.floor(1000 + Math.random() * 9000) + '-' + 
-                           Math.random().toString(36).substring(2, 6).toUpperCase();
-    }
-    next();
-});
-
-module.exports = mongoose.model('User', userSchema);
+        checkSiteStatus();
+        if (token && userData) loadDashboard();
+    </script>
+</body>
+</html>
