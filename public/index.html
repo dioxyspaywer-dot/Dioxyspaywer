@@ -237,7 +237,7 @@
                 <select id="wit-network">
                     <option value="" disabled selected>Opérateur</option>
                     <optgroup label=" Togo"><option value="TMONEY">Tmoney</option><option value="MOOV_TO">Moov Togo</option></optgroup>
-                    <optgroup label="🇨 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
+                    <optgroup label="🇮 CI"><option value="MTN_CI">MTN CI</option><option value="MOOV_CI">Moov CI</option></optgroup>
                     <optgroup label="🇧 Bénin"><option value="MTN_BJ">MTN BJ</option><option value="MOOV_BJ">Moov BJ</option></optgroup>
                 </select>
                 <button onclick="withdraw()">Retirer</button>
@@ -255,18 +255,7 @@
         <div id="admin-section">
             <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
             <p>Total Utilisateurs: <span id="vault-total">0</span> FCFA</p>
-            
-            <!-- NOUVEAU BOUTON DE CONTRÔLE PRODUITS COURTS TERMES -->
-            <div class="card" style="border-left-color: #2196F3; margin-top: 20px;">
-                <h4>Gestion Produits Courts Termes</h4>
-                <p id="shortterm-status-text" style="font-weight:bold;">État actuel : Chargement...</p>
-                <button id="btn-toggle-shortterm" onclick="toggleShortTermProducts()" style="background:#2196F3; color:white; margin-top:10px;">
-                    Basculer Disponibilité (Activer/Désactiver)
-                </button>
-            </div>
-            <!-- FIN DU NOUVEAU BLOC -->
-
-            <button class="danger" onclick="emergencyStop()" style="margin-top:20px;">⚠️ DÉSACTIVER LE SITE (URGENCE)</button>
+            <button class="danger" onclick="emergencyStop()">️ DÉSACTIVER LE SITE</button>
         </div>
     </div>
 
@@ -274,7 +263,7 @@
     <div class="bottom-nav">
         <div class="nav-btn active" onclick="switchTab('dashboard')"><span class="nav-icon"></span><span>Tableau<br>de bord</span></div>
         <div class="nav-btn" onclick="switchTab('products')"><span class="nav-icon"></span><span>Produits</span></div>
-        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon"></span><span>Mes<br>Produits</span></div>
+        <div class="nav-btn" onclick="switchTab('myproducts')"><span class="nav-icon">📦</span><span>Mes<br>Produits</span></div>
         <div class="nav-btn" onclick="switchTab('account')"><span class="nav-icon"></span><span>Compte</span></div>
         <div class="nav-btn" onclick="switchTab('transactions')"><span class="nav-icon">💳</span><span>Caisse</span></div>
         <div class="nav-btn" onclick="switchTab('history')"><span class="nav-icon"></span><span>Historique</span></div>
@@ -284,7 +273,6 @@
         const API_URL = 'https://dioxyspaywer.onrender.com/api';
         let token = localStorage.getItem('token');
         let userData = JSON.parse(localStorage.getItem('userData'));
-        let isShortTermActive = true; // Variable globale pour l'état
 
         function switchTab(tabName) {
             ['dashboard','products','myproducts','account','transactions','history'].forEach(t => document.getElementById('section-'+t).classList.add('hidden'));
@@ -331,68 +319,13 @@
         function logout() { localStorage.clear(); location.reload(); }
         function copyReferralCode() { navigator.clipboard.writeText(document.getElementById('my-referral-code').innerText).then(() => alert('Copié !')); }
 
-        // Fonction pour mettre à jour la visibilité des produits selon l'état
-        function updateShortTermVisibility() {
-            const productsSection = document.querySelector('#section-products h4:nth-of-type(2)'); // Titre "Produits Courts Termes"
-            const productCards = document.querySelectorAll('#section-products .card:not(#lt-card-shop)'); 
-            
-            if (!isShortTermActive) {
-                if(productsSection) productsSection.style.display = 'none';
-                productCards.forEach(card => card.style.display = 'none');
-                
-                let warningMsg = document.getElementById('shortterm-warning');
-                if(!warningMsg) {
-                    warningMsg = document.createElement('p');
-                    warningMsg.id = 'shortterm-warning';
-                    warningMsg.style.color = '#ff9800';
-                    warningMsg.style.textAlign = 'center';
-                    warningMsg.style.fontWeight = 'bold';
-                    warningMsg.innerText = "⚠️ Les produits courts termes sont temporairement indisponibles.";
-                    const section = document.getElementById('section-products');
-                    section.appendChild(warningMsg);
-                } else {
-                    warningMsg.style.display = 'block';
-                }
-            } else {
-                if(productsSection) productsSection.style.display = 'block';
-                productCards.forEach(card => card.style.display = 'block');
-                const warningMsg = document.getElementById('shortterm-warning');
-                if(warningMsg) warningMsg.style.display = 'none';
-            }
-        }
-
-        // Fonction Admin pour basculer l'état
-        async function toggleShortTermProducts() {
-            if(!confirm("Voulez-vous vraiment changer la disponibilité des produits courts termes ?\n(Cela affectera tous les utilisateurs)")) return;
-            
-            try {
-                const res = await fetch(`${API_URL}/admin/toggle-shortterm`, {
-                    method: 'POST',
-                    headers: {'Authorization': `Bearer ${token}`}
-                });
-                const data = await res.json();
-                if(data.success) {
-                    alert(data.message);
-                    isShortTermActive = data.isActive;
-                    updateShortTermVisibility();
-                    
-                    const statusText = document.getElementById('shortterm-status-text');
-                    if(statusText) statusText.innerText = `État actuel : ${isShortTermActive ? 'ACTIVÉ ✅' : 'DÉSACTIVÉ ❌'}`;
-                } else {
-                    alert("Erreur : " + (data.error || "Impossible de changer l'état."));
-                }
-            } catch (e) {
-                alert("Erreur de connexion au serveur.");
-                console.error(e);
-            }
-        }
-
         function renderMyProducts() {
             const container = document.getElementById('my-products-list');
             container.innerHTML = '';
             let hasProducts = false;
             const now = new Date();
 
+            // --- PRODUIT LONG TERME ---
             if (userData.hasLongTerm) {
                 hasProducts = true;
                 const startDate = new Date(userData.longTermStartDate);
@@ -411,6 +344,7 @@
                     </div>`;
             }
 
+            // --- PRODUITS COURTS TERMES ---
             if (userData.shortTermProducts) {
                 userData.shortTermProducts.forEach(prod => {
                     hasProducts = true;
@@ -506,27 +440,14 @@
                 document.getElementById('btn-buy-lt-shop').style.display = 'none'; 
                 document.getElementById('lt-status-shop').style.display = 'block'; 
             }
-
-            // Mise à jour de l'état des produits courts termes
-            isShortTermActive = userData.isShortTermActive !== undefined ? userData.isShortTermActive : true;
-            updateShortTermVisibility();
             
             renderMyProducts();
             renderHistory();
             
-            if (userData.role === 'admin') { 
-                document.getElementById('admin-section').style.display = 'block'; 
-                loadAdminData(); 
-            }
+            if (userData.role === 'admin') { document.getElementById('admin-section').style.display = 'block'; loadAdminData(); }
         }
 
         async function invest(type, amount) {
-            // Vérification locale rapide avant d'envoyer
-            if (type.startsWith('prod') && !isShortTermActive) {
-                alert("❌ Les produits courts termes sont actuellement indisponibles.");
-                return;
-            }
-
             if (!userData || userData.balance < amount) {
                 alert("❌ Solde insuffisant !");
                 return;
@@ -546,7 +467,7 @@
                     alert("❌ Échec : " + (data.error || "Erreur"));
                 }
             } catch (error) {
-                alert("❌ Problème de connexion.");
+                alert(" Problème de connexion.");
             }
         }
 
@@ -589,15 +510,6 @@
             const res = await fetch(`${API_URL}/admin/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
             const data = await res.json();
             if(data.users) document.getElementById('vault-total').innerText = data.totalVault;
-            
-            if (data.isShortTermActive !== undefined) {
-                isShortTermActive = data.isShortTermActive;
-                const statusText = document.getElementById('shortterm-status-text');
-                if(statusText) {
-                    statusText.innerText = `État actuel : ${isShortTermActive ? 'ACTIVÉ ✅' : 'DÉSACTIVÉ ❌'}`;
-                }
-                updateShortTermVisibility();
-            }
         }
 
         async function emergencyStop() {
@@ -611,5 +523,5 @@
         checkSiteStatus();
         if (token && userData) loadDashboard();
     </script>
-</body> 
+</body>
 </html>
