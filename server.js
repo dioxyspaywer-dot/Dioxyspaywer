@@ -90,7 +90,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Connexion (CALCUL DES GAINS À LA VOLÉE)
+// Connexion (Calcul des gains à la volée)
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     try {
@@ -188,7 +188,7 @@ app.post('/api/login', async (req, res) => {
             transactions: transactions
         });
     } catch (e) {
-        console.error(e);
+        console.error("Erreur Login:", e);
         res.status(500).json({ error: 'Erreur serveur login' });
     }
 });
@@ -344,7 +344,7 @@ app.post('/api/withdraw', authMiddleware, async (req, res) => {
     }
 });
 
-// Admin
+// Admin Dashboard
 app.get('/api/admin/dashboard', authMiddleware, async (req, res) => {
     if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
     const users = await User.find();
@@ -369,4 +369,4 @@ app.post('/api/admin/emergency-stop', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Erreur.' }); }
 });
 
-app.listen(PORT, () => console.log(` Serveur Dioxyspaywer démarré sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Serveur Dioxyspaywer démarré sur le port ${PORT}`));
