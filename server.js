@@ -90,7 +90,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Connexion (Calcul des gains à la volée)
+// Connexion (Calcul des gains à la volée - CORRIGÉ)
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     try {
@@ -124,12 +124,20 @@ app.post('/api/login', async (req, res) => {
                 needsSave = true;
             }
 
+            // Transfert des gains LT vers le solde de retrait (CORRIGÉ : Type GAIN)
             if (daysPassed >= maxDays && !user.longTermFinished) {
                 user.withdrawalBalance = (user.withdrawalBalance || 0) + user.longTermAccumulatedGains;
+                
+                // ✅ CORRECTION ICI : Utilisation de 'GAIN' au lieu de 'GAIN_TRANSFER'
                 await Transaction.create({ 
-                    userId: user._id, type: 'GAIN_TRANSFER', amount: user.longTermAccumulatedGains, 
-                    status: 'SUCCESS', reference: `LT_END_${Date.now()}`, description: 'Fin Long Terme' 
+                    userId: user._id, 
+                    type: 'GAIN', 
+                    amount: user.longTermAccumulatedGains, 
+                    status: 'SUCCESS', 
+                    reference: `LT_END_${Date.now()}`,
+                    description: 'Fin Long Terme (Transfert)' 
                 });
+                
                 user.longTermAccumulatedGains = 0;
                 user.longTermFinished = true;
                 needsSave = true;
@@ -152,13 +160,21 @@ app.post('/api/login', async (req, res) => {
                     needsSave = true;
                 }
 
+                // Transfert des gains CT vers le solde de retrait (CORRIGÉ : Type GAIN)
                 if (unlockDate <= now) {
                     if (prod.accumulatedGains > 0) {
                         user.withdrawalBalance = (user.withdrawalBalance || 0) + prod.accumulatedGains;
+                        
+                        // ✅ CORRECTION ICI : Utilisation de 'GAIN' au lieu de 'GAIN_TRANSFER'
                         await Transaction.create({ 
-                            userId: user._id, type: 'GAIN_TRANSFER', amount: prod.accumulatedGains, 
-                            status: 'SUCCESS', reference: `CT_END_${Date.now()}`, description: `Fin ${prod.type}` 
+                            userId: user._id, 
+                            type: 'GAIN', 
+                            amount: prod.accumulatedGains, 
+                            status: 'SUCCESS', 
+                            reference: `CT_END_${Date.now()}`, 
+                            description: `Fin ${prod.type} (Transfert)` 
                         });
+                        
                         prod.accumulatedGains = 0;
                     }
                 } else {
