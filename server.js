@@ -9,7 +9,7 @@ const path = require('path');
 
 const User = require('./models/User');
 const Transaction = require('./models/Transaction');
-const SiteConfig = require('./models/SiteConfig'); // ✅ NOUVEAU MODÈLE
+const SiteConfig = require('./models/SiteConfig'); // ✅ Import du nouveau modèle
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -23,11 +23,11 @@ let isSiteActive = true;
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log('✅ MongoDB Connecté');
-        // Initialiser la config si elle n'existe pas
+        // Initialiser la config si elle n'existe pas au démarrage
         SiteConfig.findOne().then(doc => {
             if (!doc) {
                 SiteConfig.create({ isShortTermActive: true });
-                console.log('️ Configuration du site initialisée.');
+                console.log('⚙️ Configuration du site initialisée (Produits CT activés par défaut).');
             }
         });
     })
@@ -54,7 +54,6 @@ const authMiddleware = async (req, res, next) => {
     }
 };
 
-// Middleware Admin Spécifique
 const adminMiddleware = async (req, res, next) => {
     if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
         return res.status(403).json({ error: 'Accès réservé au créateur.' });
@@ -108,7 +107,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Connexion (Envoie aussi l'état des produits courts termes)
+// Connexion (Envoie l'état des produits courts termes)
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     try {
@@ -300,7 +299,7 @@ app.post('/api/admin/toggle-shortterm', authMiddleware, adminMiddleware, async (
         config.isShortTermActive = !config.isShortTermActive;
         await config.save();
         
-        res.json({ success: true, isActive: config.isShortTermActive, message: config.isShortTermActive ? 'Produits courts termes ACTIVÉS' : 'Produits courts termes DÉSACTIVÉS' });
+        res.json({ success: true, isActive: config.isShortTermActive, message: config.isShortTermActive ? 'Produits courts termes ACTIVÉS ✅' : 'Produits courts termes DÉSACTIVÉS ❌' });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Erreur lors du changement d\'état.' });
@@ -419,4 +418,4 @@ app.post('/api/admin/emergency-stop', authMiddleware, adminMiddleware, async (re
     } catch (error) { res.status(500).json({ error: 'Erreur.' }); }
 });
 
-app.listen(PORT, () => console.log(` Serveur Dioxyspaywer démarré sur le port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Serveur Dioxyspaywer démarré sur le port ${PORT}`));
