@@ -90,7 +90,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Connexion (Calcul des gains à la volée - CORRIGÉ)
+// Connexion
 app.post('/api/login', async (req, res) => {
     if (!isSiteActive) return res.status(503).json({ error: 'SITE_CLOSED' });
     try {
@@ -124,11 +124,9 @@ app.post('/api/login', async (req, res) => {
                 needsSave = true;
             }
 
-            // Transfert des gains LT vers le solde de retrait (CORRIGÉ : Type GAIN)
             if (daysPassed >= maxDays && !user.longTermFinished) {
                 user.withdrawalBalance = (user.withdrawalBalance || 0) + user.longTermAccumulatedGains;
                 
-                // ✅ CORRECTION ICI : Utilisation de 'GAIN' au lieu de 'GAIN_TRANSFER'
                 await Transaction.create({ 
                     userId: user._id, 
                     type: 'GAIN', 
@@ -160,12 +158,10 @@ app.post('/api/login', async (req, res) => {
                     needsSave = true;
                 }
 
-                // Transfert des gains CT vers le solde de retrait (CORRIGÉ : Type GAIN)
                 if (unlockDate <= now) {
                     if (prod.accumulatedGains > 0) {
                         user.withdrawalBalance = (user.withdrawalBalance || 0) + prod.accumulatedGains;
                         
-                        // ✅ CORRECTION ICI : Utilisation de 'GAIN' au lieu de 'GAIN_TRANSFER'
                         await Transaction.create({ 
                             userId: user._id, 
                             type: 'GAIN', 
@@ -217,7 +213,6 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
         
         if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
         
-        // Vérification Long Terme obligatoire pour les courts termes
         if (productType.startsWith('prod')) { 
             if (!user.hasLongTerm || user.longTermFinished) {
                 return res.status(403).json({ error: 'Produit Long Terme obligatoire et actif.' });
@@ -245,15 +240,15 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
             user.longTermAccumulatedGains = 0;
             user.longTermFinished = false;
         } else {
-            // Configuration des 8 produits courts termes
-            if (productType === 'prod1') { if (amount !== 2000) throw new Error('Prix P1'); dailyGain = 750; }
-            else if (productType === 'prod2') { if (amount !== 3000) throw new Error('Prix P2'); dailyGain = 1000; }
-            else if (productType === 'prod3') { if (amount !== 5000) throw new Error('Prix P3'); dailyGain = 1700; }
-            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 3000; }
-            else if (productType === 'prod5') { if (amount !== 15000) throw new Error('Prix P5'); dailyGain = 4800; }
-            else if (productType === 'prod6') { if (amount !== 20000) throw new Error('Prix P6'); dailyGain = 6500; }
-            else if (productType === 'prod7') { if (amount !== 30000) throw new Error('Prix P7'); dailyGain = 9500; }
-            else if (productType === 'prod8') { if (amount !== 40000) throw new Error('Prix P8'); dailyGain = 12000; }
+            // Configuration des produits courts termes (MIS À JOUR)
+            if (productType === 'prod1') { if (amount !== 2000) throw new Error('Prix P1'); dailyGain = 1000; }
+            else if (productType === 'prod2') { if (amount !== 3000) throw new Error('Prix P2'); dailyGain = 1200; } // MODIFIÉ
+            else if (productType === 'prod3') { if (amount !== 5000) throw new Error('Prix P3'); dailyGain = 2000; }
+            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 4000; } // MODIFIÉ
+            else if (productType === 'prod5') { if (amount !== 15000) throw new Error('Prix P5'); dailyGain = 6000; }
+            else if (productType === 'prod6') { if (amount !== 20000) throw new Error('Prix P6'); dailyGain = 8000; }
+            else if (productType === 'prod7') { if (amount !== 30000) throw new Error('Prix P7'); dailyGain = 12000; }
+            else if (productType === 'prod8') { if (amount !== 40000) throw new Error('Prix P8'); dailyGain = 16000; }
             else throw new Error('Produit inconnu');
 
             const unlockDate = new Date(); 
@@ -276,60 +271,100 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
     }
 });
 
-// Dépôt Sendavapay
+// --- DÉPÔT SENDAVAPAY (INTÉGRATION COMPLÈTE SELON DOC) ---
 app.post('/api/deposit', authMiddleware, async (req, res) => {
     const { amount, network, phone } = req.body; 
     if (amount < 2000) return res.status(400).json({ error: 'Minimum 2000 FCFA' });
+    
     try {
         const user = req.user;
-        const invoiceNumber = `DXP_${Date.now()}`;
-        const postData = {
-            amount: parseInt(amount), currency: "XOF", phone_number: phone, network: network,
-            reference: invoiceNumber, description: `Dépôt Dioxyspaywer`,
-            callback_url: process.env.SENDAVA_CALLBACK_URL, return_url: process.env.SENDAVA_RETURN_URL,
-            merchant_id: process.env.SENDAVA_MERCHANT_ID
-        };
-        const SENDAVA_API_URL = 'https://api.sendavapay.com/v1/charge'; 
+        const internalRef = `DXP_${Date.now()}`; // Référence interne
         
-        if (!process.env.SENDAVA_API_KEY) return res.status(500).json({ error: 'Config Sendavapay manquante' });
+        // Payload selon documentation Sendavapay
+        const postData = {
+            amount: parseInt(amount),
+            currency: "XOF",
+            description: `Dépôt Dioxyspaywer - ${user.fullName}`,
+            customerPhone: phone,
+            customerName: user.fullName,
+            externalReference: internalRef, // On utilise notre ref comme externe
+            redirectUrl: process.env.SENDAVA_RETURN_URL || 'https://dioxyspaywer.onrender.com'
+        };
+
+        const SENDAVA_API_URL = 'https://sendavapay.com/api/v1/create-payment';
 
         const response = await axios.post(SENDAVA_API_URL, postData, {
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.SENDAVA_API_KEY}`, 'X-Public-Key': process.env.SENDAVA_PUBLIC_KEY }
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.SENDAVA_API_KEY}`
+            }
         });
         
-        if (response.data && (response.data.success === true || response.data.checkout_url)) {
-            const paymentUrl = response.data.checkout_url || response.data.payment_link;
-            await Transaction.create({ userId: user._id, type: 'DEPOSIT', amount, method: network, status: 'PENDING', reference: invoiceNumber });
-            res.json({ success: true, paymentUrl: paymentUrl });
+        if (response.data && response.data.success) {
+            const paymentData = response.data.data;
+            
+            // Créer la transaction en attente avec les deux références
+            await Transaction.create({ 
+                userId: user._id, 
+                type: 'DEPOSIT', 
+                amount: amount, 
+                method: network, 
+                status: 'PENDING', 
+                reference: internalRef,
+                sendavaReference: paymentData.reference // Stocker la ref Sendavapay
+            });
+            
+            res.json({ 
+                success: true, 
+                paymentUrl: paymentData.paymentUrl,
+                sendavaReference: paymentData.reference
+            });
         } else {
-            res.status(400).json({ error: 'Erreur Sendavapay.' });
+            res.status(400).json({ error: 'Erreur création paiement Sendavapay.' });
         }
     } catch (error) {
-        console.error(error);
+        console.error("Erreur Sendavapay:", error.response ? error.response.data : error.message);
         res.status(500).json({ error: 'Erreur connexion Sendavapay.' });
     }
 });
 
-// Webhook Sendavapay
+// --- WEBHOOK SENDAVAPAY ---
 app.post('/api/webhook/deposit', async (req, res) => {
     try {
         const data = req.body;
-        if (data.status === 'SUCCESS' || data.event === 'completed') {
-            const invoiceNumber = data.reference || data.invoice_number;
-            const amount = parseFloat(data.amount || data.total_amount);
-            const transaction = await Transaction.findOne({ reference: invoiceNumber });
+        
+        // Vérifier si c'est un webhook de paiement complété
+        // Sendavapay peut envoyer 'status': 'completed' ou un événement spécifique
+        if (data.status === 'completed' || (data.event && data.event.includes('payment.completed'))) {
+            
+            const sendavaRef = data.reference; // La référence envoyée par Sendavapay
+            const amount = parseFloat(data.amount);
+            
+            // Chercher la transaction par la référence Sendavapay OU par notre référence externe
+            const transaction = await Transaction.findOne({ 
+                $or: [
+                    { sendavaReference: sendavaRef },
+                    { reference: sendavaRef } // Au cas où ils renvoient notre externalReference
+                ]
+            });
+            
             if (transaction && transaction.status === 'PENDING') {
                 transaction.status = 'SUCCESS';
                 await transaction.save();
+                
                 const user = await User.findById(transaction.userId);
                 if (user) {
                     user.balance += amount;
                     await user.save();
+                    console.log(`💰 Dépôt Sendavapay confirmé : ${amount} FCFA pour ${user.phone}`);
                 }
             }
         }
         res.status(200).send("OK");
-    } catch (e) { res.status(500).send("Error"); }
+    } catch (e) {
+        console.error("Erreur Webhook:", e);
+        res.status(500).send("Error");
+    }
 });
 
 // Retrait
@@ -385,4 +420,4 @@ app.post('/api/admin/emergency-stop', authMiddleware, async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Erreur.' }); }
 });
 
-app.listen(PORT, () => console.log(`🚀 Serveur Dioxyspaywer démarré sur le port ${PORT}`));
+app.listen(PORT, () => console.log(` Serveur Dioxyspaywer démarré sur le port ${PORT}`));
