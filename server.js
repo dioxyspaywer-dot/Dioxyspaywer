@@ -403,6 +403,40 @@ app.get('/api/admin/dashboard', authMiddleware, async (req, res) => {
     res.json({ users, totalVault });
 });
 
+// --- NOUVELLE ROUTE ADMIN : HISTORIQUE COMPLET DES TRANSACTIONS ---
+app.get('/api/admin/transactions', authMiddleware, async (req, res) => {
+    // Vérification stricte que c'est bien l'admin
+    if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
+        return res.status(403).json({ error: 'Accès réservé au créateur.' });
+    }
+
+    try {
+        // Récupérer toutes les transactions, triées par date décroissante (les plus récentes en premier)
+        // On limite à 100 dernières pour ne pas surcharger, mais vous pouvez augmenter ce chiffre
+        const transactions = await Transaction.find()
+            .sort({ date: -1 })
+            .limit(100) 
+            .populate('userId', 'fullName phone'); // Remplit les infos utilisateur (Nom et Téléphone)
+
+        // Formatage des données pour l'affichage
+        const formattedTransactions = transactions.map(tx => ({
+            id: tx._id,
+            userPhone: tx.userId ? tx.userId.phone : 'Inconnu',
+            userName: tx.userId ? tx.userId.fullName : 'Inconnu',
+            type: tx.type,
+            amount: tx.amount,
+            method: tx.method || '-', // Opérateur pour dépôt/retrait
+            status: tx.status,
+            date: tx.date,
+            reference: tx.reference
+        }));
+
+        res.json({ success: true, transactions: formattedTransactions });
+    } catch (e) {
+        console.error("Erreur récupération transactions admin:", e);
+        res.status(500).json({ error: 'Erreur serveur lors de la récupération de l\'historique.' });
+    }
+});
 app.post('/api/admin/emergency-stop', authMiddleware, async (req, res) => {
     if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
     isSiteActive = false;
