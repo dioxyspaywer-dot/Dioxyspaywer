@@ -244,63 +244,64 @@
             </div>
         </div>
 
-        <!-- 6. HISTORIQUE -->
+        <!-- 6. HISTORIQUE PERSONNEL -->
         <div id="section-history" class="hidden">
             <h3> Historique des Transactions</h3>
             <p style="font-size:0.8rem; color:#ccc;">Dépôts, Retraits, Investissements et Gains.</p>
             <div id="history-list" style="margin-top: 15px;"></div>
         </div>
 
-        <!-- ADMIN -->
-<div id="admin-section">
-    <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
-    
-    <!-- Statistiques Rapides -->
-    <div class="compact-grid">
-        <div class="compact-card" style="border-left: 4px solid #4CAF50;">
-            <h4 class="compact-title"> Total Utilisateurs</h4>
-            <div class="compact-balance" id="vault-total-users">0</div>
-        </div>
-        <div class="compact-card" style="border-left: 4px solid #2196F3;">
-            <h4 class="compact-title"> Trésorerie Totale</h4>
-            <div class="compact-balance" id="vault-total-money">0 FCFA</div>
-        </div>
-    </div>
+        <!-- ADMIN SECTION AMÉLIORÉE -->
+        <div id="admin-section">
+            <h2 style="color:red"> COFFRE-FORT CRÉATEUR</h2>
+            
+            <!-- Statistiques Rapides -->
+            <div class="compact-grid">
+                <div class="compact-card" style="border-left: 4px solid #4CAF50;">
+                    <h4 class="compact-title"> Total Utilisateurs</h4>
+                    <div class="compact-balance" id="vault-total-users">0</div>
+                </div>
+                <div class="compact-card" style="border-left: 4px solid #2196F3;">
+                    <h4 class="compact-title"> Trésorerie Totale</h4>
+                    <div class="compact-balance" id="vault-total-money">0 FCFA</div>
+                </div>
+            </div>
 
-    <!-- Boutons d'Actions -->
-    <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-        <button class="secondary" onclick="loadAdminTransactions()" style="background:#9C27B0; color:white; flex:1;">
-             Historique des Transactions
-        </button>
-        
-        <button class="danger" onclick="emergencyStop()" style="flex:1;">
-            ⚠️ DÉSACTIVER LE SITE (URGENCE)
-        </button>
-    </div>
+            <!-- Boutons d'Actions -->
+            <div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="secondary" onclick="loadAdminTransactions()" style="background:#9C27B0; color:white; flex:1;">
+                     📋 Historique Global
+                </button>
+                
+                <button class="danger" onclick="emergencyStop()" style="flex:1;">
+                    ⚠️ URGENCE (STOP)
+                </button>
+            </div>
 
-    <!-- Zone d'affichage de l'historique (Cachée par défaut) -->
-    <div id="admin-transactions-view" class="hidden" style="margin-top: 20px; text-align: left;">
-        <h3 style="color: white; border-bottom: 1px solid #555; padding-bottom: 10px;">📋 Historique Complet (Dernières 100)</h3>
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #ddd;">
-                <thead>
-                    <tr style="background: rgba(255,255,255,0.1); text-align: left;">
-                        <th style="padding: 8px;">Date</th>
-                        <th style="padding: 8px;">Utilisateur</th>
-                        <th style="padding: 8px;">Type</th>
-                        <th style="padding: 8px;">Montant</th>
-                        <th style="padding: 8px;">Opérateur</th>
-                        <th style="padding: 8px;">Statut</th>
-                    </tr>
-                </thead>
-                <tbody id="admin-transactions-list">
-                    <!-- Les lignes seront insérées ici par JS -->
-                </tbody>
-            </table>
+            <!-- Zone d'affichage de l'historique Admin (Cachée par défaut) -->
+            <div id="admin-transactions-view" class="hidden" style="margin-top: 20px; text-align: left;">
+                <h3 style="color: white; border-bottom: 1px solid #555; padding-bottom: 10px;">📋 Historique Complet (Dernières 100)</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: #ddd;">
+                        <thead>
+                            <tr style="background: rgba(255,255,255,0.1); text-align: left;">
+                                <th style="padding: 8px;">Date</th>
+                                <th style="padding: 8px;">Utilisateur</th>
+                                <th style="padding: 8px;">Type</th>
+                                <th style="padding: 8px;">Montant</th>
+                                <th style="padding: 8px;">Opérateur</th>
+                                <th style="padding: 8px;">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-transactions-list">
+                            <!-- Les lignes seront insérées ici par JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="document.getElementById('admin-transactions-view').classList.add('hidden')" style="margin-top:10px; background:#555; color:white;">Fermer</button>
+            </div>
         </div>
-        <button onclick="document.getElementById('admin-transactions-view').classList.add('hidden')" style="margin-top:10px; background:#555; color:white;">Fermer</button>
     </div>
-</div>
 
     <!-- BARRE DE NAVIGATION -->
     <div class="bottom-nav">
@@ -549,10 +550,78 @@
             if(data.success) { location.reload(); }
         }
 
+        // Fonction pour charger et afficher l'historique complet dans l'admin
+        async function loadAdminTransactions() {
+            const view = document.getElementById('admin-transactions-view');
+            const tbody = document.getElementById('admin-transactions-list');
+            
+            // Afficher la vue de chargement
+            view.classList.remove('hidden');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Chargement...</td></tr>';
+
+            try {
+                const res = await fetch(`${API_URL}/admin/transactions`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    tbody.innerHTML = ''; // Vider le chargement
+                    
+                    if (data.transactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Aucune transaction.</td></tr>';
+                        return;
+                    }
+
+                    data.transactions.forEach(tx => {
+                        // Déterminer la couleur du type et du statut
+                        let typeColor = '#fff';
+                        if (tx.type === 'DEPOSIT') typeColor = '#4CAF50';
+                        if (tx.type === 'WITHDRAWAL') typeColor = '#FF9800';
+                        if (tx.type === 'INVESTMENT') typeColor = '#2196F3';
+                        if (tx.type === 'GAIN') typeColor = '#00E676';
+                        if (tx.type === 'REFERRAL_BONUS') typeColor = '#9C27B0';
+
+                        let statusBadge = tx.status === 'SUCCESS' ? '<span style="color:#00E676">✅</span>' : 
+                                          tx.status === 'PENDING' ? '<span style="color:#FFC107"></span>' : 
+                                          '<span style="color:#F44336">❌</span>';
+
+                        // Formater la date
+                        const dateObj = new Date(tx.date);
+                        const dateStr = dateObj.toLocaleDateString('fr-FR') + ' ' + dateObj.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+
+                        const row = `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td style="padding: 8px; font-size: 0.75rem; color: #aaa;">${dateStr}</td>
+                                <td style="padding: 8px;">
+                                    <div style="font-weight:bold; color:#fff;">${tx.userName}</div>
+                                    <div style="font-size: 0.75rem; color: #aaa;">${tx.userPhone}</div>
+                                </td>
+                                <td style="padding: 8px; color: ${typeColor}; font-weight:bold;">${tx.type}</td>
+                                <td style="padding: 8px; font-weight:bold;">${tx.amount} FCFA</td>
+                                <td style="padding: 8px; color: #aaa;">${tx.method || '-'}</td>
+                                <td style="padding: 8px;">${statusBadge}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML += row;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Erreur: ' + data.error + '</td></tr>';
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Erreur de connexion.</td></tr>';
+            }
+        }
+
+        // Mise à jour de loadAdminData pour afficher aussi le nombre d'utilisateurs
         async function loadAdminData() {
             const res = await fetch(`${API_URL}/admin/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
             const data = await res.json();
-            if(data.users) document.getElementById('vault-total').innerText = data.totalVault;
+            
+            if(data.users) {
+                document.getElementById('vault-total-users').innerText = data.users.length;
+                document.getElementById('vault-total-money').innerText = data.totalVault.toLocaleString() + ' FCFA';
+            }
         }
 
         async function emergencyStop() {
@@ -563,79 +632,6 @@
             if(data.success) showClosedScreen();
         }
 
-        // Fonction pour charger et afficher l'historique complet dans l'admin
-async function loadAdminTransactions() {
-    const view = document.getElementById('admin-transactions-view');
-    const tbody = document.getElementById('admin-transactions-list');
-    
-    // Afficher la vue de chargement
-    view.classList.remove('hidden');
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 20px;">Chargement...</td></tr>';
-
-    try {
-        const res = await fetch(`${API_URL}/admin/transactions`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            tbody.innerHTML = ''; // Vider le chargement
-            
-            if (data.transactions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Aucune transaction.</td></tr>';
-                return;
-            }
-
-            data.transactions.forEach(tx => {
-                // Déterminer la couleur du type et du statut
-                let typeColor = '#fff';
-                if (tx.type === 'DEPOSIT') typeColor = '#4CAF50';
-                if (tx.type === 'WITHDRAWAL') typeColor = '#FF9800';
-                if (tx.type === 'INVESTMENT') typeColor = '#2196F3';
-                if (tx.type === 'GAIN') typeColor = '#00E676';
-                if (tx.type === 'REFERRAL_BONUS') typeColor = '#9C27B0';
-
-                let statusBadge = tx.status === 'SUCCESS' ? '<span style="color:#00E676">✅</span>' : 
-                                  tx.status === 'PENDING' ? '<span style="color:#FFC107">⏳</span>' : 
-                                  '<span style="color:#F44336"></span>';
-
-                // Formater la date
-                const dateObj = new Date(tx.date);
-                const dateStr = dateObj.toLocaleDateString('fr-FR') + ' ' + dateObj.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-
-                const row = `
-                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                        <td style="padding: 8px; font-size: 0.75rem; color: #aaa;">${dateStr}</td>
-                        <td style="padding: 8px;">
-                            <div style="font-weight:bold; color:#fff;">${tx.userName}</div>
-                            <div style="font-size: 0.75rem; color: #aaa;">${tx.userPhone}</div>
-                        </td>
-                        <td style="padding: 8px; color: ${typeColor}; font-weight:bold;">${tx.type}</td>
-                        <td style="padding: 8px; font-weight:bold;">${tx.amount} FCFA</td>
-                        <td style="padding: 8px; color: #aaa;">${tx.method}</td>
-                        <td style="padding: 8px;">${statusBadge}</td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-            });
-        } else {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Erreur: ' + data.error + '</td></tr>';
-        }
-    } catch (e) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:red;">Erreur de connexion.</td></tr>';
-    }
-}
-
-// Mise à jour de loadAdminData pour afficher aussi le nombre d'utilisateurs
-async function loadAdminData() {
-    const res = await fetch(`${API_URL}/admin/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
-    const data = await res.json();
-    
-    if(data.users) {
-        document.getElementById('vault-total-users').innerText = data.users.length;
-        document.getElementById('vault-total-money').innerText = data.totalVault.toLocaleString() + ' FCFA';
-    }
-        }
         checkSiteStatus();
         if (token && userData) loadDashboard();
     </script>
