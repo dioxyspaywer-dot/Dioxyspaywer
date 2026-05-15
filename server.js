@@ -241,14 +241,14 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
             user.longTermFinished = false;
         } else {
             // Configuration des produits courts termes (MIS À JOUR)
-            if (productType === 'prod1') { if (amount !== 2000) throw new Error('Prix P1'); dailyGain = 1000; }
-            else if (productType === 'prod2') { if (amount !== 3000) throw new Error('Prix P2'); dailyGain = 1200; } // MODIFIÉ
-            else if (productType === 'prod3') { if (amount !== 5000) throw new Error('Prix P3'); dailyGain = 2000; }
-            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 4000; } // MODIFIÉ
-            else if (productType === 'prod5') { if (amount !== 15000) throw new Error('Prix P5'); dailyGain = 6000; }
-            else if (productType === 'prod6') { if (amount !== 20000) throw new Error('Prix P6'); dailyGain = 8000; }
-            else if (productType === 'prod7') { if (amount !== 30000) throw new Error('Prix P7'); dailyGain = 12000; }
-            else if (productType === 'prod8') { if (amount !== 40000) throw new Error('Prix P8'); dailyGain = 16000; }
+            if (productType === 'prod1') { if (amount !== 2000) throw new Error('Prix P1'); dailyGain = 750; }
+            else if (productType === 'prod2') { if (amount !== 3000) throw new Error('Prix P2'); dailyGain = 1000; } // MODIFIÉ
+            else if (productType === 'prod3') { if (amount !== 5000) throw new Error('Prix P3'); dailyGain = 1700; }
+            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 3000; } // MODIFIÉ
+            else if (productType === 'prod5') { if (amount !== 15000) throw new Error('Prix P5'); dailyGain = 4800; }
+            else if (productType === 'prod6') { if (amount !== 20000) throw new Error('Prix P6'); dailyGain = 6500; }
+            else if (productType === 'prod7') { if (amount !== 30000) throw new Error('Prix P7'); dailyGain = 9500; }
+            else if (productType === 'prod8') { if (amount !== 40000) throw new Error('Prix P8'); dailyGain = 12000; }
             else throw new Error('Produit inconnu');
 
             const unlockDate = new Date(); 
