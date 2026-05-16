@@ -112,11 +112,11 @@ app.post('/api/login', async (req, res) => {
         const now = new Date();
         let needsSave = false;
 
-        // 1. Calcul Long Terme (70 jours)
+        // 1. Calcul Long Terme (85 jours)
         if (user.hasLongTerm && user.longTermStartDate) {
             const startDate = new Date(user.longTermStartDate);
             const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-            const maxDays = 70;
+            const maxDays = 85;
             
             const daysToCount = daysPassed > maxDays ? maxDays : (daysPassed < 0 ? 0 : daysPassed);
             const expectedTotalGains = daysToCount * 700;
