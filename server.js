@@ -101,9 +101,11 @@ app.post('/api/login', async (req, res) => {
         }
 
         const currentMonth = new Date().toISOString().slice(0, 7);
+        // Réinitialisation automatique si on change de mois
         if (user.lastPurchaseMonth !== currentMonth) {
             user.monthlyPurchasesCount = 0;
             user.lastPurchaseMonth = currentMonth;
+            user.lastPurchaseDate = null; // Reset de la date aussi
             await user.save();
         }
 
@@ -205,7 +207,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// Investissement
+// Investissement (MODIFIÉ AVEC LA RÈGLE DES 7 JOURS)
 app.post('/api/invest', authMiddleware, async (req, res) => {
     try {
         const { productType, amount } = req.body;
@@ -213,17 +215,44 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
         
         if (user.balance < amount) return res.status(400).json({ error: 'Solde insuffisant dans le dépôt.' });
         
+        // Logique spécifique aux produits courts termes
         if (productType.startsWith('prod')) { 
             if (!user.hasLongTerm || user.longTermFinished) {
                 return res.status(403).json({ error: 'Produit Long Terme obligatoire et actif.' });
             }
-            const currentMonth = new Date().toISOString().slice(0, 7);
+
+            const currentMonth = new Date().toISOString().slice(0, 7); // Ex: "2026-05"
+            
+            // 1. Réinitialisation si on change de mois
             if (user.lastPurchaseMonth !== currentMonth) { 
                 user.monthlyPurchasesCount = 0; 
                 user.lastPurchaseMonth = currentMonth; 
+                user.lastPurchaseDate = null; // On reset la date aussi
             }
+
+            // 2. Vérification de la limite de 2 achats
             if (user.monthlyPurchasesCount >= 2) {
-                return res.status(403).json({ error: 'Limite 2 achats/mois atteinte.' });
+                return res.status(403).json({ error: 'Limite de 2 achats/mois atteinte.' });
+            }
+
+            // 3. ✅ NOUVELLE RÈGLE : Vérification du délai de 7 jours
+            // Si l'utilisateur a déjà fait au moins 1 achat ce mois-ci ET qu'on a une date enregistrée
+            if (user.monthlyPurchasesCount >= 1 && user.lastPurchaseDate) {
+                const now = new Date();
+                const lastBuy = new Date(user.lastPurchaseDate);
+                
+                // Calcul de la différence en millisecondes
+                const diffTime = Math.abs(now - lastBuy);
+                // Conversion en jours (24h * 60min * 60sec * 1000ms)
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+                // Si moins de 7 jours se sont écoulés
+                if (diffDays < 7) {
+                    const daysLeft = 7 - diffDays;
+                    return res.status(403).json({ 
+                        error: `Vous devez attendre encore ${daysLeft} jour(s) avant votre prochain achat.` 
+                    });
+                }
             }
         }
 
@@ -240,11 +269,11 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
             user.longTermAccumulatedGains = 0;
             user.longTermFinished = false;
         } else {
-            // Configuration des produits courts termes (MIS À JOUR)
+            // Configuration des produits courts termes
             if (productType === 'prod1') { if (amount !== 2000) throw new Error('Prix P1'); dailyGain = 750; }
-            else if (productType === 'prod2') { if (amount !== 3000) throw new Error('Prix P2'); dailyGain = 1000; } // MODIFIÉ
+            else if (productType === 'prod2') { if (amount !== 3000) throw new Error('Prix P2'); dailyGain = 1000; }
             else if (productType === 'prod3') { if (amount !== 5000) throw new Error('Prix P3'); dailyGain = 1700; }
-            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 3000; } // MODIFIÉ
+            else if (productType === 'prod4') { if (amount !== 10000) throw new Error('Prix P4'); dailyGain = 3000; }
             else if (productType === 'prod5') { if (amount !== 15000) throw new Error('Prix P5'); dailyGain = 4800; }
             else if (productType === 'prod6') { if (amount !== 20000) throw new Error('Prix P6'); dailyGain = 6500; }
             else if (productType === 'prod7') { if (amount !== 30000) throw new Error('Prix P7'); dailyGain = 9500; }
@@ -258,7 +287,12 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
             user.shortTermProducts.push({ 
                 type: productType, amount, dailyGain, startDate: now, unlockDate, accumulatedGains: 0 
             });
+            
+            // Incrémentation du compteur
             user.monthlyPurchasesCount += 1;
+            
+            // ✅ MISE À JOUR DE LA DATE DU DERNIER ACHAT
+            user.lastPurchaseDate = now; 
         }
         
         await user.save();
@@ -271,23 +305,22 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
     }
 });
 
-// --- DÉPÔT SENDAVAPAY (INTÉGRATION COMPLÈTE SELON DOC) ---
+// --- DÉPÔT SENDAVAPAY ---
 app.post('/api/deposit', authMiddleware, async (req, res) => {
     const { amount, network, phone } = req.body; 
     if (amount < 2000) return res.status(400).json({ error: 'Minimum 2000 FCFA' });
     
     try {
         const user = req.user;
-        const internalRef = `DXP_${Date.now()}`; // Référence interne
+        const internalRef = `DXP_${Date.now()}`; 
         
-        // Payload selon documentation Sendavapay
         const postData = {
             amount: parseInt(amount),
             currency: "XOF",
             description: `Dépôt Dioxyspaywer - ${user.fullName}`,
             customerPhone: phone,
             customerName: user.fullName,
-            externalReference: internalRef, // On utilise notre ref comme externe
+            externalReference: internalRef,
             redirectUrl: process.env.SENDAVA_RETURN_URL || 'https://dioxyspaywer.onrender.com'
         };
 
@@ -303,7 +336,6 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
         if (response.data && response.data.success) {
             const paymentData = response.data.data;
             
-            // Créer la transaction en attente avec les deux références
             await Transaction.create({ 
                 userId: user._id, 
                 type: 'DEPOSIT', 
@@ -311,7 +343,7 @@ app.post('/api/deposit', authMiddleware, async (req, res) => {
                 method: network, 
                 status: 'PENDING', 
                 reference: internalRef,
-                sendavaReference: paymentData.reference // Stocker la ref Sendavapay
+                sendavaReference: paymentData.reference
             });
             
             res.json({ 
@@ -333,18 +365,15 @@ app.post('/api/webhook/deposit', async (req, res) => {
     try {
         const data = req.body;
         
-        // Vérifier si c'est un webhook de paiement complété
-        // Sendavapay peut envoyer 'status': 'completed' ou un événement spécifique
         if (data.status === 'completed' || (data.event && data.event.includes('payment.completed'))) {
             
-            const sendavaRef = data.reference; // La référence envoyée par Sendavapay
+            const sendavaRef = data.reference;
             const amount = parseFloat(data.amount);
             
-            // Chercher la transaction par la référence Sendavapay OU par notre référence externe
             const transaction = await Transaction.findOne({ 
                 $or: [
                     { sendavaReference: sendavaRef },
-                    { reference: sendavaRef } // Au cas où ils renvoient notre externalReference
+                    { reference: sendavaRef }
                 ]
             });
             
@@ -403,29 +432,25 @@ app.get('/api/admin/dashboard', authMiddleware, async (req, res) => {
     res.json({ users, totalVault });
 });
 
-// --- NOUVELLE ROUTE ADMIN : HISTORIQUE COMPLET DES TRANSACTIONS ---
+// Historique Complet des Transactions (Admin)
 app.get('/api/admin/transactions', authMiddleware, async (req, res) => {
-    // Vérification stricte que c'est bien l'admin
     if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) {
         return res.status(403).json({ error: 'Accès réservé au créateur.' });
     }
 
     try {
-        // Récupérer toutes les transactions, triées par date décroissante (les plus récentes en premier)
-        // On limite à 100 dernières pour ne pas surcharger, mais vous pouvez augmenter ce chiffre
         const transactions = await Transaction.find()
             .sort({ date: -1 })
             .limit(100) 
-            .populate('userId', 'fullName phone'); // Remplit les infos utilisateur (Nom et Téléphone)
+            .populate('userId', 'fullName phone');
 
-        // Formatage des données pour l'affichage
         const formattedTransactions = transactions.map(tx => ({
             id: tx._id,
             userPhone: tx.userId ? tx.userId.phone : 'Inconnu',
             userName: tx.userId ? tx.userId.fullName : 'Inconnu',
             type: tx.type,
             amount: tx.amount,
-            method: tx.method || '-', // Opérateur pour dépôt/retrait
+            method: tx.method || '-',
             status: tx.status,
             date: tx.date,
             reference: tx.reference
@@ -437,6 +462,8 @@ app.get('/api/admin/transactions', authMiddleware, async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur lors de la récupération de l\'historique.' });
     }
 });
+
+// Urgence Stop
 app.post('/api/admin/emergency-stop', authMiddleware, async (req, res) => {
     if (req.user.phone !== process.env.CREATOR_WALLET_PHONE) return res.status(403).json({ error: 'Interdit' });
     isSiteActive = false;
