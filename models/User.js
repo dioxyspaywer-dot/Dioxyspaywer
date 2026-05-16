@@ -7,11 +7,6 @@ const userSchema = new mongoose.Schema({
     country: { type: String, required: true },
     password: { type: String, required: true },
     role: { type: String, default: 'user' }, // 'user' ou 'admin'
-
-    // ... autres champs ...
-    monthlyPurchasesCount: { type: Number, default: 0 },
-    lastPurchaseMonth: { type: String },
-    lastPurchaseDate: { type: Date }, // ✅ NOUVEAU CHAMP : Date du dernier achat
     
     // --- SOLDES ---
     balance: { type: Number, default: 0 }, // Solde DÉPÔT (pour acheter)
@@ -39,9 +34,10 @@ const userSchema = new mongoose.Schema({
     referralCount: { type: Number, default: 0 },
     referralEarnings: { type: Number, default: 0 },
     
-    // --- LIMITES D'ACHAT ---
+    // --- LIMITES D'ACHAT & RÈGLE DES 7 JOURS ---
     monthlyPurchasesCount: { type: Number, default: 0 },
-    lastPurchaseMonth: { type: String },
+    lastPurchaseMonth: { type: String },       // Ex: "2026-05"
+    lastPurchaseDate: { type: Date },          // ✅ NOUVEAU CHAMP : Date du dernier achat court terme
     
     // --- GESTION DES RETRAITS ---
     lastWithdrawDate: { type: Date },
