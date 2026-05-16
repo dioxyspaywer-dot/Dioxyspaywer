@@ -124,7 +124,7 @@
             <!-- PRODUIT LONG TERME UNIQUE -->
             <div class="card" id="lt-card-shop">
                 <h4> Produit Long Terme (Obligatoire)</h4>
-                <p>2000 FCFA → 700 FCFA/jour (70 jours)</p>
+                <p>2000 FCFA → 700 FCFA/jour (85 jours)</p>
                 <button id="btn-buy-lt-shop" onclick="invest('longterm', 2000)">Acheter (2000 FCFA)</button>
                 <p id="lt-status-shop" style="color:#00e676; display:none; text-align:center;">✅ Déjà acheté</p>
             </div>
@@ -373,15 +373,15 @@
                 hasProducts = true;
                 const startDate = new Date(userData.longTermStartDate);
                 const daysPassed = Math.floor((now - startDate) / (1000 * 60 * 60 * 24));
-                const daysLeft = Math.max(0, 70 - daysPassed);
+                const daysLeft = Math.max(0, 85 - daysPassed);
                 const gains = userData.longTermAccumulatedGains || 0;
-                const isFinished = daysPassed >= 70;
+                const isFinished = daysPassed >= 85;
 
                 container.innerHTML += `
                     <div class="card active-product" style="border-left-color: ${isFinished ? '#00e676' : '#ffd700'}">
                         <h4>⭐ Long Terme</h4>
                         <p>Gain/jour: 700 FCFA</p>
-                        <div class="product-status"> ${daysLeft} jours restants (sur 70)</div>
+                        <div class="product-status"> ${daysLeft} jours restants (sur 85)</div>
                         <div class="product-status" style="color:#ffd700; font-weight:bold;">💰 Gains accumulés : ${gains} FCFA</div>
                         ${isFinished ? '<div style="color:#00e676; font-weight:bold;">✅ Terminé (Gains transférés)</div>' : ''}
                     </div>`;
