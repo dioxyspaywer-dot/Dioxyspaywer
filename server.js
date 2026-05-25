@@ -66,15 +66,15 @@ app.post('/api/register', async (req, res) => {
             sponsor = await User.findOne({ referralCode: referralCode.trim() });
             if (sponsor) {
                 referredByUserId = sponsor._id;
-                sponsor.balance += 350;
+                sponsor.balance += 50;
                 sponsor.referralCount += 1;
-                sponsor.referralEarnings += 350;
+                sponsor.referralEarnings += 50;
                 await sponsor.save();
                 
                 await Transaction.create({
                     userId: sponsor._id,
                     type: 'REFERRAL_BONUS',
-                    amount: 350,
+                    amount: 50,
                     method: 'Parrainage',
                     status: 'SUCCESS',
                     reference: `REF_${Date.now()}`
