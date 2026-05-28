@@ -262,7 +262,7 @@ app.post('/api/invest', authMiddleware, async (req, res) => {
 
         if (productType === 'longterm') {
             if (user.hasLongTerm) return res.status(400).json({ error: 'Déjà un produit Long Terme actif.' });
-            if (amount !== 2000) return res.status(400).json({ error: 'Prix incorrect.' });
+            if (amount !== 2500) return res.status(400).json({ error: 'Prix incorrect.' });
             
             user.hasLongTerm = true;
             user.longTermStartDate = now;
